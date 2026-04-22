@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { appendReportRow, type ReportLogRow } from '../_shared/core';
+import { appendReportRow, type ReportLogRow } from '../_shared/core.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' });

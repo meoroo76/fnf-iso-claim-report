@@ -1,8 +1,8 @@
 // Pure, framework-agnostic core logic — imported by both Vite middleware
 // (local dev) and Vercel Functions (production).
 
-import { RAW_KG, SUPPLIER_POOL, KG_META, type RawKGProduct } from './kgSnapshot';
-import { PO_OVERRIDES } from './poOverrides';
+import { RAW_KG, SUPPLIER_POOL, KG_META, type RawKGProduct } from './kgSnapshot.js';
+import { PO_OVERRIDES } from './poOverrides.js';
 
 export type KGProductDTO = {
   styleCode: string;

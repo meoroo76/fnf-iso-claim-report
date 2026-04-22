@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { listStylesFromSnapshot } from '../_shared/core';
+import { listStylesFromSnapshot } from '../_shared/core.js';
 
 export default function handler(req: VercelRequest, res: VercelResponse) {
   const season = typeof req.query.season === 'string' ? req.query.season : undefined;

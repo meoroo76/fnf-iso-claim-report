@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sendEmailCore, type EmailReq } from '../_shared/core';
+import { sendEmailCore, type EmailReq } from '../_shared/core.js';
 
 export const config = {
   api: { bodyParser: { sizeLimit: '10mb' } },

@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { readReportRows } from '../_shared/core';
+import { readReportRows } from '../_shared/core.js';
 
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   try {
