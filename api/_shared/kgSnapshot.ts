@@ -1,8 +1,9 @@
-// KG snapshot types + data loader.
-// Data lives in kg-snapshot.json (JSON import bypasses TypeScript AST bulk parsing
-// that made Vercel's esbuild fail on the 336KB inline-TS version).
+// KG snapshot types + runtime JSON loader.
+// Runtime fs.readFile bypasses esbuild bundling the big JSON into the function.
+// vercel.json `includeFiles: api/_shared/**` ensures JSON is available at runtime.
 
-import RAW_KG_JSON from './kg-snapshot.json';
+import { readFileSync } from 'fs';
+import { join } from 'path';
 
 export type RawKGProduct = {
   PRDT_CD: string;
@@ -24,7 +25,22 @@ export type RawKGProduct = {
   STOR_DT_1ST: string | null;
 };
 
-export const RAW_KG = RAW_KG_JSON as unknown as RawKGProduct[];
+function loadKgSnapshot(): RawKGProduct[] {
+  const candidates = [
+    join(process.cwd(), 'api', '_shared', 'kg-snapshot.json'),
+    join(__dirname, 'kg-snapshot.json'),
+  ];
+  for (const p of candidates) {
+    try {
+      return JSON.parse(readFileSync(p, 'utf-8')) as RawKGProduct[];
+    } catch {
+      // try next
+    }
+  }
+  return [];
+}
+
+export const RAW_KG: RawKGProduct[] = loadKgSnapshot();
 
 export const SUPPLIER_POOL: Record<'V' | 'ST', Array<[string, string]>> = {
   V: [
