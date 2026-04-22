@@ -1,0 +1,71 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  safelist: [
+    'bg-fnf-primary',
+    'bg-fnf-accent',
+    'bg-fnf-accent2',
+    'bg-fnf-danger',
+    'bg-fnf-success',
+    'bg-fnf-bg',
+    'text-fnf-accent',
+    'text-fnf-primary',
+    'text-fnf-muted',
+    'text-fnf-danger',
+    'border-fnf-border',
+    'border-fnf-accent',
+    'hdr-navy',
+    'hdr-purple',
+    'hdr-magenta',
+    'hdr-fire',
+    'hdr-sunset',
+    'shadow-accent-glow',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        // F&F corporate palette (aligned with My_HtmlDesing_SKILL)
+        fnf: {
+          primary: '#1a1a2e',
+          accent: '#e94560',
+          accent2: '#0f3460',
+          purple: '#533483',
+          bg: '#f8f9fa',
+          card: '#ffffff',
+          border: '#e9ecef',
+          text: '#2d3436',
+          muted: '#636e72',
+          success: '#00b894',
+          warning: '#fdcb6e',
+          info: '#74b9ff',
+          danger: '#d63031',
+        },
+        brand: {
+          DEFAULT: '#1a1a2e',
+          accent: '#e94560',
+          muted: '#636e72',
+        },
+      },
+      fontFamily: {
+        sans: ['"Pretendard"', '"Segoe UI"', '"Inter"', 'system-ui', 'sans-serif'],
+        serif: ['"Playfair Display"', 'Georgia', 'serif'],
+        mono: ['Consolas', '"Courier New"', 'monospace'],
+      },
+      boxShadow: {
+        card: '0 2px 12px rgba(0,0,0,0.06)',
+        cardHover: '0 6px 20px rgba(0,0,0,0.1)',
+        'accent-glow': '0 4px 20px rgba(233,69,96,0.3)',
+      },
+      backgroundImage: {
+        'hdr-navy': 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)',
+        'hdr-purple': 'linear-gradient(135deg, #16213e 0%, #0f3460 50%, #533483 100%)',
+        'hdr-magenta': 'linear-gradient(135deg, #2c003e 0%, #533483 50%, #e94560 100%)',
+        'hdr-fire': 'linear-gradient(135deg, #0f3460 0%, #1a1a2e 50%, #e94560 100%)',
+        'hdr-sunset': 'linear-gradient(135deg, #1a1a2e 0%, #533483 50%, #e94560 100%)',
+        divider: 'linear-gradient(90deg, #e94560 0%, #0f3460 50%, #1a1a2e 100%)',
+        'alert-red': 'linear-gradient(135deg, #d63031, #e17055)',
+      },
+    },
+  },
+  plugins: [],
+};

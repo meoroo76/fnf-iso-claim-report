@@ -1,0 +1,288 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* F&F Corporate Design Tokens (ported from My_HtmlDesing_SKILL) */
+:root {
+  --primary: #1a1a2e;
+  --accent: #e94560;
+  --accent2: #0f3460;
+  --bg: #f8f9fa;
+  --card: #ffffff;
+  --text: #2d3436;
+  --text-light: #636e72;
+  --border: #e9ecef;
+  --success: #00b894;
+  --warning: #fdcb6e;
+  --info: #74b9ff;
+  --danger: #d63031;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Pretendard', 'Segoe UI', 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.6;
+}
+
+.headline-serif {
+  font-family: 'Playfair Display', Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+/* ── Session Divider (gradient bar) ── */
+.session-divider {
+  height: 6px;
+  background: linear-gradient(90deg, #e94560 0%, #0f3460 50%, #1a1a2e 100%);
+}
+
+/* ── Section heading with accent left border ── */
+.section-h2 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--primary);
+  border-left: 4px solid var(--accent);
+  padding-left: 12px;
+  line-height: 1.2;
+}
+
+/* ── Card (F&F spec) ── */
+.fnf-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.fnf-card.hoverable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+/* ── Stat Card ── */
+.stat-card {
+  background: var(--card);
+  border-radius: 12px;
+  padding: 20px 16px;
+  text-align: center;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+.stat-value {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.stat-value.danger {
+  color: var(--danger);
+}
+.stat-value.accent {
+  color: var(--accent);
+}
+.stat-value.info {
+  color: var(--accent2);
+}
+.stat-value.success {
+  color: var(--success);
+}
+.stat-label {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+.stat-sub {
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* ── Meta bar dots ── */
+.meta-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.meta-dot.green {
+  background: var(--success);
+}
+.meta-dot.yellow {
+  background: var(--warning);
+}
+.meta-dot.blue {
+  background: var(--info);
+}
+.meta-dot.red {
+  background: var(--accent);
+}
+
+/* ── Risk Badge ── */
+.risk-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.risk-critical {
+  background: #ffeef0;
+  color: var(--danger);
+}
+.risk-high {
+  background: #fff0e6;
+  color: #e17055;
+}
+.risk-medium {
+  background: #fff9e6;
+  color: #d68910;
+}
+.risk-low {
+  background: #e6f9f0;
+  color: var(--success);
+}
+
+/* ── Tip / Warning / Danger boxes ── */
+.tip-box {
+  background: #e8f8f5;
+  border-left: 4px solid var(--success);
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+}
+.warning-box {
+  background: #fff9e6;
+  border-left: 4px solid #f39c12;
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+}
+.danger-box {
+  background: #fef2f2;
+  border-left: 4px solid var(--danger);
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+}
+
+/* ── Alert box (gradient red) ── */
+.alert-box {
+  background: linear-gradient(135deg, #d63031, #e17055);
+  color: #fff;
+  border-radius: 12px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 4px 16px rgba(214, 48, 49, 0.3);
+}
+.alert-box .alert-icon {
+  font-size: 30px;
+}
+
+/* ── Top nav ── */
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+  height: 56px;
+}
+.top-nav a,
+.top-nav button {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 10px 18px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.top-nav a:hover,
+.top-nav button:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.top-nav a.active {
+  color: #fff;
+  background: rgba(233, 69, 96, 0.3);
+}
+
+/* ── Gradient header (hero) ── */
+.hero {
+  color: #fff;
+  padding: 48px 0 44px;
+  position: relative;
+  overflow: hidden;
+}
+.hero.hdr-navy {
+  background: linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%);
+}
+.hero.hdr-purple {
+  background: linear-gradient(135deg, #16213e 0%, #0f3460 50%, #533483 100%);
+}
+.hero.hdr-magenta {
+  background: linear-gradient(135deg, #2c003e 0%, #533483 50%, #e94560 100%);
+}
+.hero.hdr-fire {
+  background: linear-gradient(135deg, #0f3460 0%, #1a1a2e 50%, #e94560 100%);
+}
+.hero.hdr-sunset {
+  background: linear-gradient(135deg, #1a1a2e 0%, #533483 50%, #e94560 100%);
+}
+.hero h1,
+.hero p,
+.hero .badge,
+.hero a,
+.hero span {
+  color: #fff;
+}
+.hero .badge {
+  display: inline-block;
+  background: var(--accent);
+  color: #fff;
+  padding: 4px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  font-weight: 600;
+  margin-bottom: 14px;
+  box-shadow: 0 4px 16px rgba(233, 69, 96, 0.4);
+}
+
+/* ── Report page (A4) ── */
+.report-page {
+  width: 794px;
+  height: 1123px;
+  background: #ffffff;
+  box-shadow: 0 10px 40px rgba(17, 17, 17, 0.12);
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Scrollbar (light) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
