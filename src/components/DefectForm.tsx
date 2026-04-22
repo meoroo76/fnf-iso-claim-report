@@ -157,7 +157,14 @@ export function DefectForm({ state, onChange, onGenerate, translating = false }:
             <p className="text-sm">{lookupError}</p>
           </div>
         )}
-        {state.product && <ProductCard product={state.product} />}
+        {state.product && (
+          <ProductCard
+            product={state.product}
+            fallbackPhoto={
+              state.defectPhotos[0]?.dataUrl ?? state.careLabelPhotos[0]?.dataUrl
+            }
+          />
+        )}
 
         <div className="grid grid-cols-3 gap-2 pt-2">
           <Field label={UI_STRINGS.claimNo}>
@@ -332,9 +339,18 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function ProductCard({ product }: { product: KGProduct }) {
+function ProductCard({
+  product,
+  fallbackPhoto,
+}: {
+  product: KGProduct;
+  fallbackPhoto?: string;
+}) {
+  // Image priority: KG product image → uploaded user photo → SVG placeholder
+  const usingUserPhoto = !product.productImage && Boolean(fallbackPhoto);
   const img =
     product.productImage ??
+    fallbackPhoto ??
     `data:image/svg+xml;utf8,${encodeURIComponent(
       `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'><rect width='400' height='500' fill='#1a1a2e'/><text x='200' y='250' font-family='Inter' font-size='20' fill='#fff' text-anchor='middle' font-weight='700'>${product.brand}</text></svg>`
     )}`;
@@ -349,12 +365,22 @@ function ProductCard({ product }: { product: KGProduct }) {
       >
         {product.season} · {product.source === 'kg-live' ? 'LIVE KG' : 'KG SNAPSHOT'}
       </div>
-      <img
-        src={img}
-        alt={product.styleCode}
-        className="w-32 h-44 object-cover bg-neutral-100"
-        crossOrigin="anonymous"
-      />
+      <div className="relative">
+        <img
+          src={img}
+          alt={product.styleCode}
+          className="w-32 h-44 object-cover bg-neutral-100"
+          crossOrigin="anonymous"
+        />
+        {usingUserPhoto && (
+          <div
+            className="absolute bottom-1 left-1 right-1 text-[9px] font-semibold text-white text-center py-0.5 rounded"
+            style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+          >
+            업로드 사진
+          </div>
+        )}
+      </div>
       <div className="p-3 flex-1 grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
         <InfoCell label="Brand" value={product.brand} />
         <InfoCell label="Style" value={product.styleCode} mono />

@@ -54,17 +54,34 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
       </header>
 
       <section className="grid grid-cols-[110px_1fr] gap-3 mb-3">
-        <img
-          src={
+        {(() => {
+          const fallback = defectPhotos[0]?.dataUrl ?? careLabelPhotos[0]?.dataUrl;
+          const usingUser = !product.productImage && Boolean(fallback);
+          const imgSrc =
             product.productImage ??
+            fallback ??
             `data:image/svg+xml;utf8,${encodeURIComponent(
               `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 500'><rect width='400' height='500' fill='#1a1a2e'/><text x='200' y='250' font-family='Inter' font-size='20' fill='#fff' text-anchor='middle' font-weight='700'>${product.brand}</text></svg>`
-            )}`
-          }
-          alt={product.styleCode}
-          className="w-[110px] h-[140px] object-cover border border-neutral-300"
-          crossOrigin="anonymous"
-        />
+            )}`;
+          return (
+            <div className="relative">
+              <img
+                src={imgSrc}
+                alt={product.styleCode}
+                className="w-[110px] h-[140px] object-cover border border-neutral-300"
+                crossOrigin="anonymous"
+              />
+              {usingUser && (
+                <div
+                  className="absolute bottom-0 left-0 right-0 text-[7px] font-semibold text-white text-center py-0.5"
+                  style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+                >
+                  업로드 사진 사용
+                </div>
+              )}
+            </div>
+          );
+        })()}
         <div>
           <div className="text-[9px] uppercase tracking-[0.2em] text-brand-muted mb-1">
             Product Information

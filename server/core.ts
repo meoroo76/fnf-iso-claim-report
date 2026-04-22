@@ -2,6 +2,7 @@
 // (local dev) and Vercel Functions (production).
 
 import { RAW_KG, SUPPLIER_POOL, KG_META, type RawKGProduct } from '../src/data/kgSnapshot';
+import { PO_OVERRIDES } from '../src/data/poOverrides';
 
 export type KGProductDTO = {
   styleCode: string;
@@ -85,9 +86,17 @@ function derivePartCode(brandCode: 'V' | 'ST', prdtCd: string): string {
 
 export function toDTO(raw: RawKGProduct): KGProductDTO {
   const [color, colorCode] = pickColor(raw.PRDT_CD, raw.PRDT_IMG_URL);
-  const [supplier, vendorCode] = pickSupplier(raw.BRD_CD, raw.PRDT_CD);
-  const { qty, poNo } = syntheticOrder(raw.PRDT_CD);
   const season = raw.SESN === '25F' ? '25FW' : '26SS';
+
+  // Real KG PO data takes precedence over synthetic fallback.
+  const override = PO_OVERRIDES[raw.PRDT_CD];
+  const realSupplier = override?.supplier;
+  const realQty = override?.receivedQty;
+  const realPO = override?.poNumber;
+
+  const [fallbackSupplier, fallbackVendor] = pickSupplier(raw.BRD_CD, raw.PRDT_CD);
+  const fallback = syntheticOrder(raw.PRDT_CD);
+
   return {
     styleCode: raw.PRDT_CD,
     partCode: derivePartCode(raw.BRD_CD, raw.PRDT_CD),
@@ -105,15 +114,15 @@ export function toDTO(raw: RawKGProduct): KGProductDTO {
     adultKids: raw.ADULT_KIDS_NM,
     color,
     colorCode,
-    receivedQty: qty,
+    receivedQty: realQty ?? fallback.qty,
     firstStoredDate: raw.STOR_DT_1ST,
     unitPrice: raw.TAG_PRICE,
-    poNumber: poNo,
-    supplier,
-    supplierVendorCode: vendorCode,
+    poNumber: realPO ?? fallback.poNo,
+    supplier: realSupplier ?? fallbackSupplier,
+    supplierVendorCode: override ? '' : fallbackVendor,
     productImage: raw.PRDT_IMG_URL,
     techPackUrl: raw.CAD_PDF_URL,
-    source: 'snapshot',
+    source: override ? 'kg-live' : 'snapshot',
   };
 }
 
