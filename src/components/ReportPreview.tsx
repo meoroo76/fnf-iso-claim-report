@@ -219,15 +219,29 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
               <div className="text-[8.5px] uppercase tracking-[0.18em] text-brand-muted mb-1 font-semibold">
                 케어라벨 · Care Label (검사번호)
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {careLabelPhotos.slice(0, 4).map((p, i) => (
+              <div
+                className={`grid gap-1.5 ${
+                  careLabelPhotos.length === 1
+                    ? 'grid-cols-1'
+                    : careLabelPhotos.length === 2
+                    ? 'grid-cols-2'
+                    : 'grid-cols-2'
+                }`}
+              >
+                {careLabelPhotos.slice(0, hasBothPhotoTypes ? 4 : 6).map((p, i) => (
                   <figure key={p.id} className="relative">
                     <img
                       src={p.dataUrl}
                       alt={p.name}
-                      className="w-full h-24 object-contain bg-neutral-50 border border-neutral-400"
+                      className={`w-full object-contain bg-neutral-50 border border-neutral-400 ${
+                        careLabelPhotos.length === 1
+                          ? 'h-80'
+                          : hasBothPhotoTypes
+                          ? 'h-44'
+                          : 'h-56'
+                      }`}
                     />
-                    <figcaption className="absolute bottom-1 left-1 bg-black/70 text-white text-[8px] font-mono px-1 py-0.5 rounded">
+                    <figcaption className="absolute bottom-1 left-1 bg-black/70 text-white text-[8px] font-mono px-1.5 py-0.5 rounded">
                       FIG-C{String(i + 1).padStart(2, '0')}
                     </figcaption>
                   </figure>
