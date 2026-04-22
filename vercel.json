@@ -3,12 +3,5 @@
   "framework": "vite",
   "buildCommand": "tsc -b --noEmit && vite build",
   "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "@vercel/node@3",
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  }
+  "installCommand": "npm install"
 }
