@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sendEmailCore, type EmailReq } from '../../server/core';
+import { sendEmailCore, type EmailReq } from '../_shared/core';
 
 export const config = {
-  api: { bodyParser: { sizeLimit: '10mb' } }, // allow PDF attachment base64
+  api: { bodyParser: { sizeLimit: '10mb' } },
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

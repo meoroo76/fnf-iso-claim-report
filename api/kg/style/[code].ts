@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { findStyleInSnapshot, fetchLiveStyle } from '../../../server/core';
+import { findStyleInSnapshot, fetchLiveStyle } from '../../_shared/core';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const code = typeof req.query.code === 'string' ? req.query.code : '';
