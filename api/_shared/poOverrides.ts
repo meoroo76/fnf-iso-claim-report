@@ -1,7 +1,6 @@
-// PO override type + runtime JSON loader.
+// PO override type + JSON import.
 
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import PO_JSON from './po-overrides.json';
 
 export type POOverride = {
   supplier: string;
@@ -11,19 +10,4 @@ export type POOverride = {
   poCount: number;
 };
 
-function loadPoOverrides(): Record<string, POOverride> {
-  const candidates = [
-    join(process.cwd(), 'api', '_shared', 'po-overrides.json'),
-    join(__dirname, 'po-overrides.json'),
-  ];
-  for (const p of candidates) {
-    try {
-      return JSON.parse(readFileSync(p, 'utf-8')) as Record<string, POOverride>;
-    } catch {
-      // try next
-    }
-  }
-  return {};
-}
-
-export const PO_OVERRIDES: Record<string, POOverride> = loadPoOverrides();
+export const PO_OVERRIDES = PO_JSON as unknown as Record<string, POOverride>;

@@ -1,9 +1,7 @@
-// KG snapshot types + runtime JSON loader.
-// Runtime fs.readFile bypasses esbuild bundling the big JSON into the function.
-// vercel.json `includeFiles: api/_shared/**` ensures JSON is available at runtime.
+// KG snapshot types + JSON import data.
+// Back to 'import from json' — simplest that esbuild auto-bundles.
 
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import RAW_KG_JSON from './kg-snapshot.json';
 
 export type RawKGProduct = {
   PRDT_CD: string;
@@ -25,22 +23,7 @@ export type RawKGProduct = {
   STOR_DT_1ST: string | null;
 };
 
-function loadKgSnapshot(): RawKGProduct[] {
-  const candidates = [
-    join(process.cwd(), 'api', '_shared', 'kg-snapshot.json'),
-    join(__dirname, 'kg-snapshot.json'),
-  ];
-  for (const p of candidates) {
-    try {
-      return JSON.parse(readFileSync(p, 'utf-8')) as RawKGProduct[];
-    } catch {
-      // try next
-    }
-  }
-  return [];
-}
-
-export const RAW_KG: RawKGProduct[] = loadKgSnapshot();
+export const RAW_KG = RAW_KG_JSON as unknown as RawKGProduct[];
 
 export const SUPPLIER_POOL: Record<'V' | 'ST', Array<[string, string]>> = {
   V: [
