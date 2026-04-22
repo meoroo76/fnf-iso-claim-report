@@ -1,4 +1,5 @@
-// Frontend client for the notify API (email / Teams).
+// Client-side notify stub — no Vercel Functions in static mode.
+// Email/Teams posting simulated in browser console; integrate real service later.
 
 export type NotifyStatus = {
   email: boolean;
@@ -7,9 +8,7 @@ export type NotifyStatus = {
 };
 
 export async function fetchNotifyStatus(): Promise<NotifyStatus> {
-  const res = await fetch('/api/notify/status');
-  if (!res.ok) throw new Error('notify status unavailable');
-  return res.json();
+  return { email: false, teams: false, mode: 'simulation' };
 }
 
 export type EmailAttachment = {
@@ -34,38 +33,28 @@ export type SendEmailResult = {
   totalBytes?: number;
 };
 
-async function blobToBase64(blob: Blob): Promise<string> {
-  const buf = await blob.arrayBuffer();
-  let s = '';
-  const bytes = new Uint8Array(buf);
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) {
-    s += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  }
-  return btoa(s);
-}
-
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
-  const attachments = await Promise.all(
-    input.attachments.map(async (a) => ({
-      name: a.filename,
-      base64: await blobToBase64(a.blob),
-      contentType: a.contentType ?? a.blob.type,
-    }))
-  );
-  const res = await fetch('/api/notify/email', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to: input.to,
-      cc: input.cc,
-      subject: input.subject,
-      bodyText: input.bodyText,
-      attachments,
-    }),
+  const totalBytes = input.attachments.reduce((a, att) => a + att.blob.size, 0);
+  // Browser-side simulation: log to console + return success shape
+  // eslint-disable-next-line no-console
+  console.log('[notify:email] SIMULATION', {
+    to: input.to,
+    cc: input.cc,
+    subject: input.subject,
+    bodyLength: input.bodyText.length,
+    attachments: input.attachments.map((a) => ({
+      filename: a.filename,
+      bytes: a.blob.size,
+    })),
+    totalBytes,
   });
-  if (!res.ok) throw new Error(`이메일 발송 실패 (${res.status})`);
-  return res.json();
+  return {
+    ok: true,
+    simulated: true,
+    messageId: `sim-${Date.now()}`,
+    attachmentCount: input.attachments.length,
+    totalBytes,
+  };
 }
 
 export type PostToTeamsInput = {
@@ -80,13 +69,9 @@ export type PostToTeamsInput = {
 };
 
 export async function postToTeams(input: PostToTeamsInput) {
-  const res = await fetch('/api/notify/teams', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-  if (!res.ok) throw new Error(`Teams 게시 실패 (${res.status})`);
-  return res.json() as Promise<{ ok: boolean; simulated: boolean }>;
+  // eslint-disable-next-line no-console
+  console.log('[notify:teams] SIMULATION', input);
+  return { ok: true, simulated: true };
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────
@@ -99,7 +84,6 @@ export function dataUrlToBlob(dataUrl: string): Blob {
   return new Blob([arr], { type: mime });
 }
 
-// Strip unsafe filename chars and keep extension.
 export function sanitizeFilename(raw: string, fallbackExt = 'jpg'): string {
   const noPath = raw.replace(/^.*[/\\]/, '');
   const dotIdx = noPath.lastIndexOf('.');

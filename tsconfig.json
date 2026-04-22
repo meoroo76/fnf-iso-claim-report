@@ -20,5 +20,5 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["node", "@vercel/node"]
   },
-  "include": ["src", "server", "api"]
+  "include": ["src"]
 }
