@@ -2,6 +2,19 @@
 
 생산 완료·매장 입고 후 발생한 소비자/매장 클레임을 **한국어 · 영어 · 베트남어**로 동시 문서화하고, PDF/Word로 내보내며, 협력사에 **이메일 자동 발송** 또는 **Teams 채널 게시**까지 원스톱으로 처리하는 웹앱입니다.
 
+## 배포 현황
+
+- GitHub: https://github.com/meoroo76/fnf-iso-claim-report (private)
+- Vercel: 자동 배포 (main 브랜치 push 시)
+- Dashboard: https://vercel.com/meoroo76s-projects/fnf-iso-claim-report
+
+## 데이터 규모 (KG 스냅샷 2026-04-22)
+
+- 품번: 553개 (DUVETICA V × 322 + SERGIO TACCHINI ST × 231)
+- 실 PO 매핑: 537개 품번 (97%)
+- 협력사: 55+ (MFAC_COMPY_NM 실데이터)
+- 운영시즌: 25FW · 26SS
+
 ## 핵심 기능
 
 - **지식그래프 실시간 조회** — 품번 입력 시 제품 이미지·협력사·컬러·입고수량·PO 자동 로드 (운영시즌 25FW/26SS, DUVETICA/SERGIO TACCHINI/DISCOVERY × 90건 스냅샷 + `KG_API_BASE` 설정 시 라이브 호출)
