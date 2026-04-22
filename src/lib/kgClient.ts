@@ -64,7 +64,7 @@ export async function fetchStyle(code: string): Promise<KGProduct> {
 
 export async function listStyles(
   season?: '25FW' | '26SS',
-  brand?: 'V' | 'ST' | 'X'
+  brand?: 'V' | 'ST'
 ): Promise<KGProduct[]> {
   const qs = new URLSearchParams();
   if (season) qs.set('season', season);

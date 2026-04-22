@@ -5,7 +5,6 @@ import type { DefectCategory } from '../data/defectCatalog';
 import {
   fetchStyle,
   fetchMeta,
-  listStyles,
   KGNotFound,
   type KGProduct,
   type KGMeta,
@@ -20,28 +19,15 @@ type Props = {
 };
 
 const CATEGORIES: DefectCategory[] = Object.keys(DEFECT_CATALOG) as DefectCategory[];
-type SeasonFilter = 'ALL' | '25FW' | '26SS';
-type BrandFilter = 'ALL' | 'V' | 'ST' | 'X';
 
 export function DefectForm({ state, onChange, onGenerate, translating = false }: Props) {
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [lookupBusy, setLookupBusy] = useState(false);
   const [meta, setMeta] = useState<KGMeta | null>(null);
-  const [seasonFilter, setSeasonFilter] = useState<SeasonFilter>('ALL');
-  const [brandFilter, setBrandFilter] = useState<BrandFilter>('ALL');
-  const [styleList, setStyleList] = useState<KGProduct[]>([]);
 
   useEffect(() => {
     fetchMeta().then(setMeta).catch(() => setMeta(null));
   }, []);
-
-  useEffect(() => {
-    const season = seasonFilter === 'ALL' ? undefined : seasonFilter;
-    const brand = brandFilter === 'ALL' ? undefined : brandFilter;
-    listStyles(season, brand)
-      .then(setStyleList)
-      .catch(() => setStyleList([]));
-  }, [seasonFilter, brandFilter]);
 
   async function handleLookup() {
     if (!state.styleInput.trim()) return;
@@ -65,26 +51,6 @@ export function DefectForm({ state, onChange, onGenerate, translating = false }:
         );
       }
       onChange({ ...state, product: null });
-    } finally {
-      setLookupBusy(false);
-    }
-  }
-
-  async function selectSample(code: string) {
-    onChange({ ...state, styleInput: code });
-    setLookupBusy(true);
-    setLookupError(null);
-    try {
-      const product = await fetchStyle(code);
-      onChange({
-        ...state,
-        product,
-        styleInput: product.styleCode,
-        claimNo:
-          state.claimNo || claimNoFor(product.styleCode, state.inspectionDate || todayISO()),
-      });
-    } catch (err) {
-      setLookupError(err instanceof Error ? err.message : 'KG 조회 오류');
     } finally {
       setLookupBusy(false);
     }
@@ -167,95 +133,21 @@ export function DefectForm({ state, onChange, onGenerate, translating = false }:
           </button>
         </div>
 
-        {/* ── Live KG meta badge + season/brand filters ── */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[11px] text-fnf-muted mr-1 font-semibold uppercase tracking-wider">
-            운영시즌
-          </span>
-          {(['ALL', '25FW', '26SS'] as const).map((s) => (
-            <button
-              key={s}
-              type="button"
-              onClick={() => setSeasonFilter(s)}
-              className={`text-[11px] px-3 py-1 rounded-full font-semibold transition border ${
-                seasonFilter === s
-                  ? 'border-transparent text-white'
-                  : 'border-fnf-border hover:border-fnf-accent text-fnf-primary'
-              }`}
-              style={seasonFilter === s ? { backgroundColor: '#e94560' } : undefined}
-            >
-              {s === 'ALL' ? '전체' : s}
-            </button>
-          ))}
-          <span className="mx-1 text-neutral-300">·</span>
-          <span className="text-[11px] text-fnf-muted mr-1 font-semibold uppercase tracking-wider">
-            브랜드
-          </span>
-          {(
-            [
-              ['ALL', '전체'],
-              ['V', 'DUV'],
-              ['ST', 'SRG'],
-              ['X', 'DSC'],
-            ] as const
-          ).map(([code, label]) => (
-            <button
-              key={code}
-              type="button"
-              onClick={() => setBrandFilter(code as BrandFilter)}
-              className={`text-[11px] px-2.5 py-1 rounded-full font-semibold transition border ${
-                brandFilter === code
-                  ? 'border-transparent text-white'
-                  : 'border-fnf-border hover:border-fnf-accent text-fnf-primary'
-              }`}
-              style={brandFilter === code ? { backgroundColor: '#0f3460' } : undefined}
-            >
-              {label}
-            </button>
-          ))}
-          {meta && (
+        {meta && (
+          <div className="text-[10px] text-fnf-muted flex items-center justify-between">
+            <span>
+              전체 품번 · 단축 품번(PART_CD) 모두 조회 가능 (예: <code className="font-mono">VDPT10854</code> 또는{' '}
+              <code className="font-mono">V25FVDPT10854</code>)
+            </span>
             <span
-              className="ml-auto text-[10px] font-mono px-2 py-0.5 rounded-full"
+              className="font-mono px-2 py-0.5 rounded-full"
               style={{ backgroundColor: meta.live ? '#00b894' : '#1a1a2e', color: '#fff' }}
               title={meta.source}
             >
-              &#9679; {meta.live ? 'LIVE KG' : `KG Snapshot · ${meta.fetchedAt}`} · {meta.totalProducts}건
+              &#9679; {meta.live ? 'LIVE KG' : `KG ${meta.fetchedAt}`} · {meta.totalProducts}건
             </span>
-          )}
-        </div>
-
-        <div className="max-h-44 overflow-y-auto border border-fnf-border rounded-lg p-2 bg-fnf-bg">
-          {styleList.length === 0 ? (
-            <div className="text-xs text-fnf-muted text-center py-6">
-              선택한 조건의 품번이 없습니다.
-            </div>
-          ) : (
-            <div className="flex flex-wrap gap-1">
-              {styleList.map((p) => (
-                <button
-                  key={p.styleCode}
-                  type="button"
-                  onClick={() => selectSample(p.styleCode)}
-                  className="text-[10px] px-2 py-1 rounded-md bg-white border border-fnf-border hover:border-fnf-accent font-mono transition flex items-center gap-1.5"
-                  title={`${p.brand} · ${p.productName} · ${p.category}`}
-                >
-                  <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{
-                      backgroundColor:
-                        p.brandCode === 'V'
-                          ? '#1a1a2e'
-                          : p.brandCode === 'ST'
-                          ? '#0f3460'
-                          : '#e94560',
-                    }}
-                  />
-                  {p.styleCode}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {lookupError && (
           <div className="danger-box">

@@ -2,9 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReportState } from '../types';
 import { generateEmailDraft } from '../lib/emailBody';
 import {
+  dataUrlToBlob,
   fetchNotifyStatus,
   postToTeams,
+  sanitizeFilename,
   sendEmail,
+  type EmailAttachment,
   type NotifyStatus,
 } from '../lib/notifyClient';
 
@@ -41,6 +44,29 @@ export function SendDialog({ open, onClose, state, buildPdfBlob }: Props) {
       claimRate,
     });
   }, [state]);
+
+  const photoAttachmentPreview = useMemo(() => {
+    const defect = state.defectPhotos.map((p, i) => {
+      const blob = dataUrlToBlob(p.dataUrl);
+      return {
+        filename: `FIG-D${String(i + 1).padStart(2, '0')}_${sanitizeFilename(p.name)}`,
+        size: blob.size,
+        role: 'defect' as const,
+      };
+    });
+    const care = state.careLabelPhotos.map((p, i) => {
+      const blob = dataUrlToBlob(p.dataUrl);
+      return {
+        filename: `FIG-C${String(i + 1).padStart(2, '0')}_${sanitizeFilename(p.name)}`,
+        size: blob.size,
+        role: 'care' as const,
+      };
+    });
+    return [...defect, ...care];
+  }, [state.defectPhotos, state.careLabelPhotos]);
+
+  const totalEstimatedBytes =
+    photoAttachmentPreview.reduce((acc, p) => acc + p.size, 0) + 800_000; // +~800KB PDF estimate
 
   useEffect(() => {
     if (!open) return;
@@ -79,20 +105,54 @@ export function SendDialog({ open, onClose, state, buildPdfBlob }: Props) {
     setBusy('email');
     setResult(null);
     try {
+      const attachments: EmailAttachment[] = [];
+
+      // 1) PDF report first
       const pdf = await buildPdfBlob();
+      if (pdf) {
+        attachments.push({
+          blob: pdf.blob,
+          filename: pdf.filename,
+          contentType: 'application/pdf',
+        });
+      }
+
+      // 2) Original defect photos
+      state.defectPhotos.forEach((p, i) => {
+        const blob = dataUrlToBlob(p.dataUrl);
+        attachments.push({
+          blob,
+          filename: `FIG-D${String(i + 1).padStart(2, '0')}_${sanitizeFilename(p.name)}`,
+          contentType: blob.type,
+        });
+      });
+
+      // 3) Original care-label photos
+      state.careLabelPhotos.forEach((p, i) => {
+        const blob = dataUrlToBlob(p.dataUrl);
+        attachments.push({
+          blob,
+          filename: `FIG-C${String(i + 1).padStart(2, '0')}_${sanitizeFilename(p.name)}`,
+          contentType: blob.type,
+        });
+      });
+
       const r = await sendEmail({
         to: toList,
         cc: cc ? parseList(cc) : undefined,
         subject,
         bodyText: body,
-        attachmentBlob: pdf?.blob,
-        attachmentName: pdf?.filename ?? `ISO_Claim_Report_${state.claimNo || state.product.styleCode}.pdf`,
+        attachments,
       });
+
+      const sizeText = r.totalBytes
+        ? ` · 총 ${(r.totalBytes / 1024 / 1024).toFixed(2)}MB`
+        : '';
       setResult({
         ok: r.ok,
         text: r.simulated
-          ? '✉ 시뮬레이션 성공 — SMTP 미설정 상태. 실제 발송하려면 환경변수 SMTP_HOST/USER/PASS/FROM 설정 후 재기동하세요.'
-          : `✉ 메일 발송 완료. Message-ID: ${r.messageId}`,
+          ? `✉ 시뮬레이션 성공 — 첨부 ${r.attachmentCount}건${sizeText} (PDF + 원본 사진). SMTP 미설정 상태.`
+          : `✉ 메일 발송 완료. 첨부 ${r.attachmentCount}건${sizeText} · Message-ID: ${r.messageId}`,
       });
     } catch (e) {
       setResult({ ok: false, text: e instanceof Error ? e.message : '발송 실패' });
@@ -252,9 +312,38 @@ export function SendDialog({ open, onClose, state, buildPdfBlob }: Props) {
             />
           </label>
 
-          <div className="text-[11px] text-fnf-muted bg-fnf-bg rounded-md p-2.5 border border-fnf-border">
-            📎 첨부: <strong>ISO_Claim_Report_{state.claimNo || state.product.styleCode}.pdf</strong>{' '}
-            (Send 클릭 시 현재 미리보기를 3× 해상도 PDF로 즉시 렌더)
+          <div className="text-[11px] bg-fnf-bg rounded-md p-3 border border-fnf-border space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-fnf-primary">
+                📎 첨부 파일 ({1 + photoAttachmentPreview.length}건 · 약{' '}
+                {(totalEstimatedBytes / 1024 / 1024).toFixed(2)} MB 예상)
+              </span>
+              {totalEstimatedBytes > 25 * 1024 * 1024 && (
+                <span
+                  className="text-[10px] px-2 py-0.5 rounded-full font-semibold"
+                  style={{ backgroundColor: '#fff0e6', color: '#d63031' }}
+                >
+                  ⚠ Gmail 25MB 제한 초과 가능
+                </span>
+              )}
+            </div>
+            <div className="font-mono text-[11px] space-y-0.5 text-fnf-muted max-h-32 overflow-y-auto">
+              <div>
+                📄 <strong className="text-fnf-primary">ISO_Claim_Report_{state.claimNo || state.product.styleCode}.pdf</strong>
+                <span className="ml-2 text-[10px]">(3× 해상도로 렌더)</span>
+              </div>
+              {photoAttachmentPreview.map((p) => (
+                <div key={p.filename}>
+                  {p.role === 'defect' ? '🖼' : '🏷'} {p.filename}
+                  <span className="ml-2 text-[10px]">
+                    ({(p.size / 1024).toFixed(0)} KB)
+                  </span>
+                </div>
+              ))}
+              {photoAttachmentPreview.length === 0 && (
+                <div className="italic">업로드한 사진이 없어 PDF만 첨부됩니다.</div>
+              )}
+            </div>
           </div>
 
           {result && (

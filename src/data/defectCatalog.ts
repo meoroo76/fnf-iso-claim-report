@@ -129,7 +129,7 @@ export const UI_STRINGS = {
   sectionInput: '1. 입력',
   sectionPreview: '2. 리포트 미리보기',
   styleLookup: '스타일(품번) 조회',
-  styleLookupPlaceholder: '예: V25FVDPT10854',
+  styleLookupPlaceholder: '예: VDPT10854 또는 V25FVDPT10854',
   lookupBtn: '지식그래프 조회',
   defectList: '불량 내역',
   addDefect: '+ 불량 추가',

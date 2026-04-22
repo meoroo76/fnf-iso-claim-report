@@ -71,9 +71,16 @@ function pickColor(styleCode: string, imgUrl: string | null): [string, string] {
   return [['Black', 'Navy', 'Ivory', 'Beige'][hashIdx(styleCode, 4)], 'STD'];
 }
 
-function pickSupplier(brandCode: 'V' | 'ST' | 'X', styleCode: string): [string, string] {
+function pickSupplier(brandCode: 'V' | 'ST', styleCode: string): [string, string] {
   const pool = SUPPLIER_POOL[brandCode];
   return pool[hashIdx(styleCode, pool.length)];
+}
+
+// PART_CD is the PRDT_CD with the brand-season prefix stripped:
+//   V25F + VDPT10854  → VDPT10854    (V is 1-char brand → strip 4 = 1+3)
+//   ST25F + TXCP00154 → TXCP00154    (ST is 2-char brand → strip 5 = 2+3)
+function derivePartCode(brandCode: 'V' | 'ST', prdtCd: string): string {
+  return brandCode === 'V' ? prdtCd.slice(4) : prdtCd.slice(5);
 }
 
 export function toDTO(raw: RawKGProduct): KGProductDTO {
@@ -83,7 +90,7 @@ export function toDTO(raw: RawKGProduct): KGProductDTO {
   const season = raw.SESN === '25F' ? '25FW' : '26SS';
   return {
     styleCode: raw.PRDT_CD,
-    partCode: raw.PRDT_CD.slice(3),
+    partCode: derivePartCode(raw.BRD_CD, raw.PRDT_CD),
     brand: raw.BRD_NM,
     brandCode: raw.BRD_CD,
     systemBrand: raw.SYS_BRD_NM,
@@ -111,15 +118,27 @@ export function toDTO(raw: RawKGProduct): KGProductDTO {
 }
 
 const styleCache = new Map<string, KGProductDTO>();
-RAW_KG.forEach((r) => styleCache.set(r.PRDT_CD.toUpperCase(), toDTO(r)));
+const partCodeIndex = new Map<string, KGProductDTO>();
+RAW_KG.forEach((r) => {
+  const dto = toDTO(r);
+  styleCache.set(r.PRDT_CD.toUpperCase(), dto);
+  partCodeIndex.set(derivePartCode(r.BRD_CD, r.PRDT_CD).toUpperCase(), dto);
+});
 
+// Matches both full PRDT_CD (V25FVDPT10854) and short PART_CD (VDPT10854).
 export function findStyleInSnapshot(code: string): KGProductDTO | null {
   const key = code.trim().toUpperCase();
   if (styleCache.has(key)) return styleCache.get(key)!;
-  const hit = Array.from(styleCache.keys()).find(
+  if (partCodeIndex.has(key)) return partCodeIndex.get(key)!;
+  // fuzzy fallback on either index
+  const styleHit = Array.from(styleCache.keys()).find(
     (k) => k.startsWith(key) || k.includes(key)
   );
-  return hit ? styleCache.get(hit)! : null;
+  if (styleHit) return styleCache.get(styleHit)!;
+  const partHit = Array.from(partCodeIndex.keys()).find(
+    (k) => k.startsWith(key) || k.includes(key)
+  );
+  return partHit ? partCodeIndex.get(partHit)! : null;
 }
 
 export function listStylesFromSnapshot(season?: string, brand?: string): KGProductDTO[] {
@@ -155,11 +174,19 @@ export async function fetchLiveStyle(code: string): Promise<KGProductDTO | null>
 export { KG_META };
 
 // ── Notify ────────────────────────────────────────────────────────────
+export type EmailAttachment = {
+  name: string;
+  base64: string;
+  contentType?: string;
+};
+
 export type EmailReq = {
   to: string[];
   cc?: string[];
   subject: string;
   bodyText: string;
+  attachments?: EmailAttachment[];
+  // Legacy single-attachment fallback
   attachmentBase64?: string;
   attachmentName?: string;
 };
@@ -175,7 +202,32 @@ export type TeamsReq = {
   attachmentName?: string;
 };
 
+function normalizeAttachments(
+  req: EmailReq
+): Array<{ filename: string; content: Buffer; contentType?: string }> {
+  if (req.attachments && req.attachments.length > 0) {
+    return req.attachments.map((a) => ({
+      filename: a.name,
+      content: Buffer.from(a.base64, 'base64'),
+      contentType: a.contentType,
+    }));
+  }
+  if (req.attachmentBase64) {
+    return [
+      {
+        filename: req.attachmentName ?? 'ISO_Claim_Report.pdf',
+        content: Buffer.from(req.attachmentBase64, 'base64'),
+        contentType: 'application/pdf',
+      },
+    ];
+  }
+  return [];
+}
+
 export async function sendEmailCore(req: EmailReq) {
+  const atts = normalizeAttachments(req);
+  const totalBytes = atts.reduce((acc, a) => acc + a.content.length, 0);
+
   const host = process.env.SMTP_HOST;
   if (!host) {
     console.log('[notify:email] SIMULATION (no SMTP_* env)', {
@@ -183,10 +235,19 @@ export async function sendEmailCore(req: EmailReq) {
       cc: req.cc,
       subject: req.subject,
       bodyLength: req.bodyText.length,
-      attachmentName: req.attachmentName,
-      attachmentBytes: req.attachmentBase64 ? Math.floor((req.attachmentBase64.length * 3) / 4) : 0,
+      attachments: atts.map((a) => ({
+        filename: a.filename,
+        bytes: a.content.length,
+        contentType: a.contentType,
+      })),
+      totalAttachmentBytes: totalBytes,
     });
-    return { simulated: true, messageId: `sim-${Date.now()}` };
+    return {
+      simulated: true,
+      messageId: `sim-${Date.now()}`,
+      attachmentCount: atts.length,
+      totalBytes,
+    };
   }
 
   const { default: nodemailer } = await import('nodemailer');
@@ -206,18 +267,15 @@ export async function sendEmailCore(req: EmailReq) {
     cc: req.cc,
     subject: req.subject,
     text: req.bodyText,
-    attachments: req.attachmentBase64
-      ? [
-          {
-            filename: req.attachmentName ?? 'ISO_Claim_Report.pdf',
-            content: Buffer.from(req.attachmentBase64, 'base64'),
-            contentType: 'application/pdf',
-          },
-        ]
-      : undefined,
+    attachments: atts.length > 0 ? atts : undefined,
   });
 
-  return { simulated: false, messageId: info.messageId };
+  return {
+    simulated: false,
+    messageId: info.messageId,
+    attachmentCount: atts.length,
+    totalBytes,
+  };
 }
 
 export async function postToTeamsCore(req: TeamsReq) {
