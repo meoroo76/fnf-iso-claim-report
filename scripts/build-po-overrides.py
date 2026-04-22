@@ -5,7 +5,12 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-SRC = Path('scripts/po-data-raw.json')
+SRC_FILES = [
+    Path('scripts/po-data-raw.json'),    # V 26SS
+    Path('scripts/po-data-v25f.json'),   # V 25FW
+    Path('scripts/po-data-st25f.json'),  # ST 25FW
+    Path('scripts/po-data-st26s.json'),  # ST 26SS
+]
 OUT = Path('src/data/poOverrides.ts')
 
 
@@ -16,8 +21,14 @@ def esc(s: str) -> str:
 
 
 def main() -> None:
-    payload = json.loads(SRC.read_text(encoding='utf-8'))
-    rows = payload['rows']
+    rows = []
+    for src in SRC_FILES:
+        if not src.exists():
+            print(f'  skip {src} (missing)', file=sys.stderr)
+            continue
+        payload = json.loads(src.read_text(encoding='utf-8'))
+        rows.extend(payload['rows'])
+        print(f'  loaded {len(payload["rows"])} rows from {src.name}', file=sys.stderr)
 
     # Aggregate: primary supplier = first encountered, total qty = sum, primary PO = first
     agg: dict[str, dict] = defaultdict(lambda: {'supplier': None, 'origin': None, 'qty': 0, 'po': None, 'po_count': 0})

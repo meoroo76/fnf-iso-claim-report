@@ -1,0 +1,2 @@
+timestamp,claimNo,styleCode,brand,supplier,season,receivedQty,defectCount,totalDefectQty,claimRate,inspector,inspectionDate,defectSummary
+2026-04-22T10:00:00Z,TEST-001,V26SVUTS15761,DUVETICA,�����̾�����,26SS,320,2,5,1.56,�������,2026-04-22,stitching(3pcs); fabric(2pcs)

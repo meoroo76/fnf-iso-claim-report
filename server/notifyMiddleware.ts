@@ -3,8 +3,11 @@ import type { IncomingMessage, ServerResponse } from 'http';
 import {
   sendEmailCore,
   postToTeamsCore,
+  appendReportRow,
+  readReportRows,
   type EmailReq,
   type TeamsReq,
+  type ReportLogRow,
 } from './core';
 
 function readBody<T>(req: IncomingMessage): Promise<T> {
@@ -52,6 +55,25 @@ export function notifyMiddleware(): Connect.NextHandleFunction {
         return sendJSON(res, 200, { ...result, ok: result.ok });
       } catch (e) {
         return sendJSON(res, 500, { ok: false, error: e instanceof Error ? e.message : 'unknown' });
+      }
+    }
+
+    if (req.url === '/api/reports/save' && req.method === 'POST') {
+      try {
+        const body = await readBody<ReportLogRow>(req);
+        const result = await appendReportRow(body);
+        return sendJSON(res, 200, result);
+      } catch (e) {
+        return sendJSON(res, 500, { ok: false, error: e instanceof Error ? e.message : 'unknown' });
+      }
+    }
+
+    if (req.url === '/api/reports/list' && req.method === 'GET') {
+      try {
+        const items = await readReportRows();
+        return sendJSON(res, 200, { items });
+      } catch (e) {
+        return sendJSON(res, 500, { error: e instanceof Error ? e.message : 'unknown' });
       }
     }
 

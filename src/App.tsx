@@ -8,6 +8,8 @@ import { exportElementToPdf, renderElementToPdfBlob } from './lib/exportPdf';
 import { exportReportToDocx } from './lib/exportDocx';
 import { translateBatch } from './lib/translate';
 import { SendDialog } from './components/SendDialog';
+import { clearState, loadState, loadMeta, saveState, type PersistMeta } from './lib/persistence';
+import { buildReportLogEntry, saveReportLog } from './lib/reportLogClient';
 
 const A4_WIDTH = 794;
 const A4_HEIGHT = 1123;
@@ -26,7 +28,8 @@ const initialState: ReportState = {
 };
 
 export default function App() {
-  const [state, setState] = useState<ReportState>(initialState);
+  const [state, setState] = useState<ReportState>(() => loadState() ?? initialState);
+  const [persistMeta, setPersistMeta] = useState<PersistMeta | null>(() => loadMeta());
   const reportRef = useRef<HTMLDivElement>(null);
   const scaleWrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -82,18 +85,44 @@ export default function App() {
 
   const [translating, setTranslating] = useState(false);
 
+  // ── Auto-save to localStorage on every state change (debounced ~300ms) ──
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      const meta = saveState(state);
+      if (meta) setPersistMeta(meta);
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [state]);
+
   async function handleGenerate() {
     setTranslating(true);
     try {
       const texts = state.defects.map((d) => d.detailKo).filter((t) => t.trim().length > 0);
       const translations = texts.length > 0 ? await translateBatch(texts) : {};
-      setState((s) => ({ ...s, generated: true, translations }));
+      const nextState = { ...state, generated: true, translations };
+      setState(nextState);
+
+      // Persist to server CSV log (timestamped row)
+      const entry = buildReportLogEntry(nextState);
+      if (entry) {
+        saveReportLog(entry).catch(() => {
+          /* silent — localStorage still holds the draft */
+        });
+      }
+
       setTimeout(() => {
         document.getElementById('preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 50);
     } finally {
       setTranslating(false);
     }
+  }
+
+  function handleResetInputs() {
+    if (!window.confirm('현재 입력값을 모두 지우고 새로 시작하시겠습니까?')) return;
+    clearState();
+    setState(initialState);
+    setPersistMeta(null);
   }
 
   async function handleExportPdf() {

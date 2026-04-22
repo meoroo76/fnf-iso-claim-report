@@ -182,6 +182,128 @@ export async function fetchLiveStyle(code: string): Promise<KGProductDTO | null>
 
 export { KG_META };
 
+// ── Report CSV log ────────────────────────────────────────────────────
+// Appends one timestamped row per completed report to data/reports.csv.
+// On Vercel Functions, /tmp is ephemeral — for durable storage use Blob/KV.
+
+import { promises as fs } from 'fs';
+import * as path from 'path';
+
+export type ReportLogRow = {
+  timestamp: string;
+  claimNo: string;
+  styleCode: string;
+  brand: string;
+  supplier: string;
+  season: string;
+  receivedQty: number;
+  defectCount: number;
+  totalDefectQty: number;
+  claimRate: number;
+  inspector: string;
+  inspectionDate: string;
+  defectSummary: string;
+};
+
+const CSV_HEADERS: Array<keyof ReportLogRow> = [
+  'timestamp',
+  'claimNo',
+  'styleCode',
+  'brand',
+  'supplier',
+  'season',
+  'receivedQty',
+  'defectCount',
+  'totalDefectQty',
+  'claimRate',
+  'inspector',
+  'inspectionDate',
+  'defectSummary',
+];
+
+function csvCell(v: unknown): string {
+  const s = v === null || v === undefined ? '' : String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function csvStoragePath(): string {
+  // Vercel FS is read-only except /tmp; locally we prefer <repo>/data/reports.csv.
+  const tmp = process.env.VERCEL ? '/tmp/reports.csv' : path.resolve('data', 'reports.csv');
+  return tmp;
+}
+
+export async function appendReportRow(row: ReportLogRow): Promise<{ ok: boolean; rowNumber: number; path: string }> {
+  const target = csvStoragePath();
+  await fs.mkdir(path.dirname(target), { recursive: true });
+  let rowNumber = 1;
+  let needHeader = true;
+  try {
+    const existing = await fs.readFile(target, 'utf8');
+    needHeader = existing.length === 0;
+    rowNumber = existing.split('\n').filter(Boolean).length; // existing data rows + header
+  } catch {
+    needHeader = true;
+  }
+  const line = CSV_HEADERS.map((k) => csvCell(row[k])).join(',');
+  const header = CSV_HEADERS.join(',');
+  const payload = (needHeader ? header + '\n' : '') + line + '\n';
+  await fs.appendFile(target, payload, 'utf8');
+  return { ok: true, rowNumber, path: target };
+}
+
+export async function readReportRows(): Promise<ReportLogRow[]> {
+  const target = csvStoragePath();
+  try {
+    const text = await fs.readFile(target, 'utf8');
+    const lines = text.split(/\r?\n/).filter(Boolean);
+    if (lines.length < 2) return [];
+    const [headerLine, ...dataLines] = lines;
+    const headers = headerLine.split(',') as Array<keyof ReportLogRow>;
+    return dataLines.map((line) => {
+      const cells = parseCsvLine(line);
+      const obj = {} as Record<string, unknown>;
+      headers.forEach((h, i) => {
+        obj[h] = cells[i] ?? '';
+      });
+      // Coerce numbers back
+      if (obj.receivedQty) obj.receivedQty = Number(obj.receivedQty);
+      if (obj.defectCount) obj.defectCount = Number(obj.defectCount);
+      if (obj.totalDefectQty) obj.totalDefectQty = Number(obj.totalDefectQty);
+      if (obj.claimRate) obj.claimRate = Number(obj.claimRate);
+      return obj as unknown as ReportLogRow;
+    });
+  } catch {
+    return [];
+  }
+}
+
+function parseCsvLine(line: string): string[] {
+  const cells: string[] = [];
+  let cur = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (inQuotes) {
+      if (c === '"' && line[i + 1] === '"') {
+        cur += '"';
+        i++;
+      } else if (c === '"') {
+        inQuotes = false;
+      } else {
+        cur += c;
+      }
+    } else {
+      if (c === '"') inQuotes = true;
+      else if (c === ',') {
+        cells.push(cur);
+        cur = '';
+      } else cur += c;
+    }
+  }
+  cells.push(cur);
+  return cells;
+}
+
 // ── Notify ────────────────────────────────────────────────────────────
 export type EmailAttachment = {
   name: string;
