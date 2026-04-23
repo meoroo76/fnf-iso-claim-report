@@ -1,7 +1,7 @@
 // Tri-lingual defect catalog — KO / EN / VI
-// INSIGHT FOCUS: how to inspect the defect thoroughly.
-// Provides concrete inspection methods, tolerance values, and test procedures
-// so the QA inspector can validate each claim in a standardized way.
+// INSIGHT FOCUS: field inspection guidance for garment factories and external
+// visual-inspection agencies — practical QC-floor instructions from F&F QA,
+// keeping only the core tolerances and standards actually used on-site.
 
 export type DefectCategory =
   | 'stitching'
@@ -24,9 +24,9 @@ export const DEFECT_CATALOG: Record<DefectCategory, { label: TriLingual; insight
       vi: 'Lỗi đường may',
     },
     insight: {
-      ko: '10배 확대경으로 SPI(인치당 땀수) 균일성, 바늘땀 건너뜀 · 밀림 유무, 시접 폭, 코너부 보강 여부를 확인하고, 접착 테이프를 붙였다 떼어 실 풀림·마찰 내성을 기록합니다.',
-      en: 'Under a 10× loupe, verify SPI uniformity, skipped/jammed stitches, seam-allowance width, and corner reinforcement; apply/remove adhesive tape to check thread unraveling and friction resistance.',
-      vi: 'Dùng kính lúp 10×, kiểm tra độ đồng đều SPI, mũi bị nhảy/kẹt, độ rộng đường biên may và phần gia cố góc; dán/bóc băng dính để đánh giá độ tuột chỉ và chịu ma sát.',
+      ko: '검단대에서 정면·이면을 육안으로 훑고, 어깨·겨드랑·밑단·포켓 입구 등 힘을 많이 받는 부위는 살짝 당겨 봉제선 들뜸과 실 튀김을 확인해 주세요. 시접 폭(몸판 1cm, 밑단 2cm 기준)과 되돌림 봉제·코너 보강 유무를 패턴과 대조하고, 박음실 쉐이드 차이는 같은 광원 아래에서 함께 점검해 불량 위치를 샘플에 표시합니다.',
+      en: 'On the QC table, scan the face and back of the finished garment and gently stretch high-stress areas (shoulder, underarm, hem, pocket openings) to check for seam puckering and loose stitches. Compare seam-allowance width (body 1 cm, hem 2 cm) against the pattern, verify backstitching and corner reinforcement, check sewing-thread shade consistency under the same lighting, and mark defect locations on the sample.',
+      vi: 'Trên bàn kiểm, rà cả mặt phải và mặt trái của sản phẩm và kéo nhẹ các vị trí chịu lực (vai, nách, lai, miệng túi) để phát hiện đường may bung hoặc chỉ lỏng. Đối chiếu độ rộng đường biên may (thân 1 cm, lai 2 cm) với rập, kiểm tra mũi lại và gia cố góc, so sánh sắc độ chỉ may dưới cùng ánh sáng, và đánh dấu vị trí lỗi lên sản phẩm.',
     },
   },
   fabric: {
@@ -36,9 +36,9 @@ export const DEFECT_CATALOG: Record<DefectCategory, { label: TriLingual; insight
       vi: 'Lỗi vải (trầy/bẩn/rách)',
     },
     insight: {
-      ko: '4-Point System 기준으로 결함 길이를 측정(≥3인치=4점)하고, ISO 105-X12(마찰견뢰도) · ISO 13937(인열강도) · ISO 12947(마모) 시험지에 결과를 기입하여 클레임 사유를 수치화합니다.',
-      en: 'Score the defect by the 4-Point System (≥3 in = 4 pts) and log ISO 105-X12 (rubbing fastness), ISO 13937 (tear strength), and ISO 12947 (abrasion) test results to quantify the claim.',
-      vi: 'Chấm điểm lỗi theo 4-Point System (≥3 inch = 4 điểm) và ghi nhận kết quả ISO 105-X12 (độ bền ma sát), ISO 13937 (độ bền xé), ISO 12947 (mài mòn) để định lượng khiếu nại.',
+      ko: '완성품을 검단대에 펼쳐 앞판·뒷판·소매 순서로 전수 육안 검사하고, 긁힘·오염·구멍·줄무늬가 보이면 위치와 길이를 기록해 4-Point System(≥3인치 = 4점)으로 점수화해 주세요. 노출도가 높은 부위(앞판 가슴·포켓·칼라)에 결함이 있으면 대체 재단 가능 여부를 판단해 따로 분류하고, 이염·타색 혼입은 같은 PO 내 최소 3장을 교차 확인합니다.',
+      en: 'Spread the finished garment on the QC table and inspect face, back, and sleeves in order; when abrasions, stains, holes, or streaks appear, record the location and length and score the defect by the 4-Point System (≥3 in = 4 pts). If defects fall on highly visible zones (front body, chest, pockets, collar), separate them and judge whether re-cutting is possible, and cross-check color bleeding or cross-contamination on at least 3 garments from the same PO.',
+      vi: 'Trải sản phẩm hoàn thiện trên bàn kiểm và kiểm tra toàn bộ thân trước, thân sau, tay áo theo thứ tự; khi thấy trầy, bẩn, lỗ hoặc sọc, ghi vị trí và chiều dài rồi chấm điểm theo 4-Point System (≥3 inch = 4 điểm). Nếu lỗi nằm ở vùng lộ (thân trước, ngực, túi, cổ), tách riêng và đánh giá khả năng cắt lại, đồng thời kiểm chéo hiện tượng dây màu hoặc lẫn màu trên ít nhất 3 sản phẩm cùng PO.',
     },
   },
   color: {
@@ -48,9 +48,9 @@ export const DEFECT_CATALOG: Record<DefectCategory, { label: TriLingual; insight
       vi: 'Sai màu / lỗi nhuộm',
     },
     insight: {
-      ko: 'D65 광원 라이트박스에서 승인 스와치와 대조해 분광측색계로 ΔE(CIELAB)를 측정하고, 허용치 1.5 이내 여부 · 메타메리즘(D65/TL84/A광원) · 로트 간 편차를 기록합니다.',
-      en: 'Under a D65 light-box, compare against the approved swatch with a spectrophotometer; record ΔE (CIELAB) within 1.5 tolerance, metamerism across D65/TL84/A sources, and inter-lot deviation.',
-      vi: 'Trong hộp sáng D65, so sánh với swatch đã duyệt bằng máy đo quang phổ; ghi ΔE (CIELAB) trong dung sai 1.5, hiện tượng metamerism dưới D65/TL84/A và độ lệch giữa các lô.',
+      ko: '승인 스와치를 항상 함께 두고 자연광과 매장 조명 두 가지 광원 아래에서 몸판·소매·칼라·포켓 등 주요 부위의 쉐이드를 비교해 주세요. 봉제로 이어지는 접합부(몸판-소매, 앞판-뒷판, 몸판-칼라)의 색상 단차를 우선 확인하고, 같은 PO 내 3장 이상을 가로로 이어 놓아 로트 간 편차와 얼룩·덜 염색 여부를 기록합니다.',
+      en: 'Keep the approved swatch on hand at all times and compare shade on the body, sleeves, collar, and pockets under both daylight and store lighting. Prioritize shade steps at sewn junctions (body-to-sleeve, front-to-back, body-to-collar), line up at least 3 garments from the same PO side-by-side, and record inter-lot deviation together with any patchy or under-dyed areas.',
+      vi: 'Luôn đặt swatch đã duyệt bên cạnh và so sắc độ ở thân, tay, cổ, túi dưới hai nguồn sáng: ánh sáng tự nhiên và ánh sáng cửa hàng. Ưu tiên kiểm tra chênh sắc ở các điểm nối may (thân-tay, thân trước-thân sau, thân-cổ), xếp liền nhau ít nhất 3 sản phẩm cùng PO để ghi độ lệch giữa các lô cũng như vùng loang và vùng nhuộm chưa đều.',
     },
   },
   print: {
@@ -60,9 +60,9 @@ export const DEFECT_CATALOG: Record<DefectCategory, { label: TriLingual; insight
       vi: 'Lỗi in / thêu',
     },
     insight: {
-      ko: '프린트 정위치 오차(±3mm)와 세탁 5회 후 크랙·탈색, 자수 밀도(stitch/cm²) · 백스티치 마감 · 뒷면 부착포 텐션을 확대 촬영하여 비교 자료로 남깁니다.',
-      en: 'Check print registration (±3mm), post-5-wash cracking and fading, embroidery density (stitch/cm²), backstitch finish, and reverse-side backing tension; archive magnified photographs as comparison evidence.',
-      vi: 'Kiểm tra vị trí in (±3mm), nứt/phai sau giặt 5 lần, mật độ thêu (mũi/cm²), hoàn thiện mũi lại và lực căng vải lót mặt trong; lưu ảnh phóng đại làm bằng chứng đối chiếu.',
+      ko: '프린트·자수 위치가 패턴 좌표와 ±3mm 이내인지 자로 확인하고, 경계선·로고 주변을 가까이서 관찰해 번짐·끊김·실밥·실 풀림 유무를 기록해 주세요. 세탁 5회 후 크랙·탈색 여부와 자수 뒷면 오프닝·부착포(백스티치) 들뜸도 함께 점검하며, 같은 불량이 3장 이상 연속 발견되면 공정 이슈로 분류해 별도 보고합니다.',
+      en: 'Use a ruler to confirm that print or embroidery placement is within ±3 mm of the pattern coordinates, and inspect edges and areas around logos up close for bleeding, gaps, loose threads, or unraveling. Check for cracking or fading after 5 washes along with backing-cloth lifting or openings on the embroidery reverse, and if the same defect appears on 3 or more consecutive garments, classify it as a process issue and report separately.',
+      vi: 'Dùng thước xác nhận vị trí in/thêu lệch không quá ±3 mm so với tọa độ trên rập, và quan sát kỹ đường viền cùng khu vực quanh logo để phát hiện lem, đứt, đầu chỉ thừa hoặc tuột chỉ. Kiểm tra nứt/phai sau 5 lần giặt cùng hiện tượng bong lót thêu hoặc hở mặt sau; nếu cùng một lỗi xuất hiện trên 3 sản phẩm liên tiếp trở lên, xếp vào lỗi quy trình và báo cáo riêng.',
     },
   },
   accessory: {
@@ -72,9 +72,9 @@ export const DEFECT_CATALOG: Record<DefectCategory, { label: TriLingual; insight
       vi: 'Lỗi phụ liệu (khóa/cúc/nhãn)',
     },
     insight: {
-      ko: '지퍼 슬라이더 50회 왕복 작동 시험 · 단추 당김강도(≥90N, 아동용 70N) · 스냅버튼 착탈력(40~80N)을 측정하고, 부자재 롯트번호와 공급처를 대조해 기록합니다.',
-      en: 'Run a 50-cycle zipper slider test; measure button pull strength (≥90N; 70N for kidswear) and snap engagement (40–80N); record the trim lot number and supplier for traceability.',
-      vi: 'Thử khóa kéo 50 lần; đo lực kéo nút (≥90N; trẻ em 70N) và lực đóng/mở nút bấm (40–80N); ghi số lô phụ liệu và nhà cung cấp để truy xuất.',
+      ko: '지퍼는 끝까지 50회 왕복 작동해 슬라이더 걸림·치아 이탈·상하 마감 유무를 확인하고, 단추·스냅은 양손으로 당겨 탈락 여부를 점검해 주세요(성인복 기준 90N 이상, 아동복 70N 이상). 라벨·트림 롯트번호와 승인 거래처를 대조하고, 다른 부자재 혼입이 의심되면 샘플을 남긴 뒤 같은 PO에서 추가 5장을 확인합니다.',
+      en: 'Run the zipper through 50 full open-close cycles to check for slider catches, tooth skipping, and proper top/bottom stops, and pull buttons and snaps by hand to confirm retention (≥90 N for adult wear, ≥70 N for kidswear). Cross-check label and trim lot numbers against the approved supplier, and when mixed trim is suspected, keep the sample and inspect 5 additional garments from the same PO.',
+      vi: 'Kéo khóa đi hết hành trình 50 lần để kiểm tra kẹt slider, lệch răng và chốt trên/dưới, đồng thời kéo tay nút và nút bấm để xác nhận độ bám (≥90 N cho đồ người lớn, ≥70 N cho đồ trẻ em). Đối chiếu số lô nhãn và phụ liệu với nhà cung cấp đã duyệt; nếu nghi ngờ lẫn phụ liệu khác, giữ lại mẫu và kiểm tra thêm 5 sản phẩm cùng PO.',
     },
   },
   measurement: {
@@ -84,9 +84,9 @@ export const DEFECT_CATALOG: Record<DefectCategory, { label: TriLingual; insight
       vi: 'Lỗi thông số kích thước',
     },
     insight: {
-      ko: '스펙 시트의 8개 주요 POM(가슴·어깨·기장·소매길이·밑단·암홀 등)을 평면 측정하고 허용치(±1cm)와 비교, 같은 사이즈 3장 이상으로 표준편차(σ)와 편차 방향을 확인합니다.',
-      en: 'Flat-measure the 8 key POMs (chest, shoulder, length, sleeve, hem, armhole, etc.) against spec tolerance (±1 cm); validate standard deviation (σ) and bias direction across ≥3 garments of the same size.',
-      vi: 'Đo phẳng 8 điểm POM chính (ngực, vai, dài áo, dài tay, lai, nách…) so với dung sai (±1 cm); xác nhận độ lệch chuẩn (σ) và hướng lệch trên ≥3 sản phẩm cùng size.',
+      ko: '샘플을 평평하게 펼쳐 스펙 시트의 주요 POM 8부위(가슴·어깨·기장·소매길이·소매너비·밑단·암홀·목너비)를 메저로 측정하고, 스펙 대비 ±1cm 허용치 내인지 확인해 주세요. 같은 사이즈 3장 이상을 동일 방식으로 측정해 치우침 방향(예: 전반적으로 짧음)이 보이면 샘플과 함께 표로 남기고, 프레싱 수축이 의심되면 스팀 후 30분 안정화 뒤 재측정합니다.',
+      en: 'Lay the sample flat and use a tape measure to check 8 key POMs from the spec sheet (chest, shoulder, length, sleeve length, sleeve width, hem, armhole, neck opening) within the ±1 cm tolerance. Measure at least 3 garments of the same size the same way, and when a bias direction shows up (e.g., all pieces running short), log it as a table alongside the sample; when pressing shrinkage is suspected, re-measure after 30 minutes of stabilization following steam.',
+      vi: 'Trải phẳng sản phẩm và dùng thước dây đo 8 điểm POM chính trong bảng thông số (ngực, vai, dài áo, dài tay, rộng tay, lai, nách, vòng cổ) trong dung sai ±1 cm. Đo cùng cách trên ít nhất 3 sản phẩm cùng size; nếu xuất hiện hướng lệch (ví dụ tất cả đều ngắn hơn), lập bảng kèm mẫu; nếu nghi co do ủi, đo lại sau 30 phút ổn định sau khi xông hơi.',
     },
   },
   contamination: {
@@ -96,9 +96,9 @@ export const DEFECT_CATALOG: Record<DefectCategory, { label: TriLingual; insight
       vi: 'Nhiễm bẩn / dị vật',
     },
     insight: {
-      ko: '금속검출기(Fe 1.2mm / SUS 2.0mm 기준) 통과 시험과 UV 365nm 램프로 형광 얼룩 · 유기물 오염을 점검하고, 외관검사 AQL 2.5 Major 기준으로 건 수를 집계합니다.',
-      en: 'Perform needle-detector passage (Fe 1.2 mm / SUS 2.0 mm thresholds) and UV-365 nm inspection for fluorescent stains and organic contamination; tally findings under AQL 2.5 Major visual criteria.',
-      vi: 'Cho qua máy dò kim loại (ngưỡng Fe 1.2 mm / SUS 2.0 mm) và dùng đèn UV 365 nm để phát hiện vết huỳnh quang và chất hữu cơ; tổng hợp theo tiêu chí AQL 2.5 Major.',
+      ko: '검단대 위 정면·이면을 형광등과 자연광 두 광원에서 훑어 얼룩·기름·분진·이물질을 위치와 함께 기록하고, 바늘·철심 혼입이 의심되면 금속검출기를 통과시켜 주세요. 같은 부위에서 오염이 반복되면 라인·공정·작업자별로 구분해 집계하고, 외관검사 AQL 2.5(Major) 기준으로 건수를 합산해 보고합니다.',
+      en: 'Scan the face and back on the QC table under both fluorescent and daylight, log the location of stains, oil marks, dust, or foreign matter, and when needle or metal contamination is suspected, pass the garment through a needle detector. If the same zone is contaminated repeatedly, tally findings by line, process, and operator, and sum the count under the AQL 2.5 (Major) visual-inspection criterion in the report.',
+      vi: 'Dưới ánh sáng huỳnh quang và ánh sáng tự nhiên, rà mặt phải và mặt trái trên bàn kiểm, ghi vị trí vết bẩn, dầu, bụi hoặc dị vật; nếu nghi lẫn kim hoặc kim loại, cho qua máy dò kim. Nếu cùng một vùng bị bẩn lặp lại, thống kê theo chuyền, công đoạn, công nhân, và tổng hợp số lỗi theo tiêu chí AQL 2.5 (Major) ngoại quan khi báo cáo.',
     },
   },
   labeling: {
@@ -108,17 +108,17 @@ export const DEFECT_CATALOG: Record<DefectCategory, { label: TriLingual; insight
       vi: 'Lỗi nhãn / nhãn bảo quản',
     },
     insight: {
-      ko: '스펙 대비 케어라벨 내용(혼용률·원산지·KC마크·바코드) 일치 여부, 부착 위치(±5mm), 세탁 10회 후 인쇄 선명도(ISO 105-C06)와 박음 유지력을 확인해 기록합니다.',
-      en: 'Cross-check care-label content (fiber content, origin, KC mark, barcode) against spec, attachment position (±5 mm), print legibility after 10 washes (ISO 105-C06), and stitch retention.',
-      vi: 'Đối chiếu nội dung nhãn bảo quản (thành phần, xuất xứ, dấu KC, mã vạch) với tiêu chuẩn, vị trí gắn (±5 mm), độ rõ in sau 10 lần giặt (ISO 105-C06) và độ bền đường may gắn nhãn.',
+      ko: '케어라벨과 사이즈 라벨의 혼용률·원산지·KC마크·바코드가 스펙과 일치하는지 한 장씩 확인하고, 부착 위치(±5mm)와 봉제선 방향이 패턴과 같은지 점검해 주세요. 세탁 10회 후 인쇄 선명도 유지와 라벨 가장자리 들뜸·말림 여부를 함께 확인하고, 오기재 발견 시 같은 PO 전량을 대상으로 선별 재검 계획을 보고에 포함합니다.',
+      en: 'Check each care label and size label piece by piece so that fiber content, country of origin, KC mark, and barcode match the spec, and verify the attachment position (±5 mm) and stitch direction against the pattern. Confirm print legibility and label-edge lifting or curling after 10 washes, and when a misprint is found, include a full-PO re-sort plan in the report.',
+      vi: 'Kiểm tra từng nhãn bảo quản và nhãn size một sản phẩm một để thành phần, xuất xứ, dấu KC và mã vạch khớp với tiêu chuẩn, đồng thời xác nhận vị trí gắn (±5 mm) và hướng đường may so với rập. Kiểm tra độ rõ nét của chữ in và hiện tượng bong hoặc cong mép nhãn sau 10 lần giặt; khi phát hiện in sai, đưa vào báo cáo kế hoạch phân loại lại toàn bộ PO.',
     },
   },
   other: {
     label: { ko: '기타', en: 'Other', vi: 'Khác' },
     insight: {
-      ko: '불량 재현 조건(온도·세탁·마찰 등)을 기록하고, 동일 PO에서 샘플 5장을 추가 선별해 단일 발생인지 공정 이슈인지 판단한 뒤 사진·측정값과 함께 리포트에 첨부합니다.',
-      en: 'Record defect reproduction conditions (temperature, wash, friction, etc.) and pull 5 more samples from the same PO to distinguish an isolated case from a process issue; attach photos and measurements to the report.',
-      vi: 'Ghi lại điều kiện tái hiện lỗi (nhiệt độ, giặt, ma sát…) và lấy thêm 5 mẫu trong cùng PO để phân biệt lỗi đơn lẻ hay vấn đề quy trình; đính kèm ảnh và số liệu vào báo cáo.',
+      ko: '불량이 어떤 조건(세탁·마찰·압력·온도 등)에서 재현되는지 기록하고, 동일 PO 내 최소 5장을 추가 선별해 일회성 현상인지 공정 이슈인지 판단해 주세요. 재현 과정을 사진·측정값과 함께 남기고, 현장에서 확인이 어려운 항목은 외부 검사기관에 의뢰할 시험 항목과 샘플 수량을 보고서에 함께 기재합니다.',
+      en: 'Record the conditions under which the defect reproduces (wash, friction, pressure, temperature, etc.) and pull at least 5 additional garments from the same PO to judge whether the issue is isolated or a process problem. Document the reproduction with photos and measurements, and for items that cannot be verified on-site, list the external-lab test items and sample quantities to commission in the report.',
+      vi: 'Ghi lại điều kiện tái hiện lỗi (giặt, ma sát, áp lực, nhiệt độ…) và lấy thêm ít nhất 5 sản phẩm cùng PO để xác định đây là hiện tượng đơn lẻ hay vấn đề quy trình. Lưu lại quá trình tái hiện kèm ảnh và số liệu; với các hạng mục không thể kiểm tra tại chỗ, ghi rõ trong báo cáo các chỉ tiêu và số lượng mẫu cần gửi ra trung tâm kiểm định bên ngoài.',
     },
   },
 };
