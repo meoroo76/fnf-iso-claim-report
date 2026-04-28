@@ -7,6 +7,8 @@ import { todayISO } from './lib/fileUtils';
 import { exportElementToPdf, renderElementToPdfBlob } from './lib/exportPdf';
 import { exportReportToDocx } from './lib/exportDocx';
 import { translateBatch } from './lib/translate';
+import { generateReportAi, AiGenerationError } from './lib/aiClient';
+import { saveReportToSheet, type SheetSaveResult } from './lib/sheetClient';
 import { SendDialog } from './components/SendDialog';
 import { clearState, loadState, loadMeta, saveState, type PersistMeta } from './lib/persistence';
 import { buildReportLogEntry, saveReportLog } from './lib/reportLogClient';
@@ -25,10 +27,18 @@ const initialState: ReportState = {
   careLabelPhotos: [],
   generated: false,
   translations: {},
+  productionGuidance: null,
+  thirdLanguage: 'vi',
 };
 
 export default function App() {
-  const [state, setState] = useState<ReportState>(() => loadState() ?? initialState);
+  const [state, setState] = useState<ReportState>(() => {
+    // Merge persisted state with initialState so newly-added fields (e.g.
+    // thirdLanguage, productionGuidance) get sane defaults on first load
+    // after an app upgrade.
+    const loaded = loadState();
+    return loaded ? { ...initialState, ...loaded } : initialState;
+  });
   const [persistMeta, setPersistMeta] = useState<PersistMeta | null>(() => loadMeta());
   const reportRef = useRef<HTMLDivElement>(null);
   const scaleWrapperRef = useRef<HTMLDivElement>(null);
@@ -84,6 +94,11 @@ export default function App() {
   }, []);
 
   const [translating, setTranslating] = useState(false);
+  const [generationStage, setGenerationStage] = useState<
+    'idle' | 'ai' | 'translate-fallback'
+  >('idle');
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [sheetSave, setSheetSave] = useState<SheetSaveResult | null>(null);
 
   // ── Auto-save to localStorage on every state change (debounced ~300ms) ──
   useEffect(() => {
@@ -95,27 +110,71 @@ export default function App() {
   }, [state]);
 
   async function handleGenerate() {
+    if (!state.product) return;
     setTranslating(true);
+    setAiError(null);
+    setGenerationStage('ai');
+
+    let translations: ReportState['translations'] = {};
+    let productionGuidance: ReportState['productionGuidance'] = null;
+    let aiSource: 'claude' | 'mymemory-fallback' | 'unknown' = 'unknown';
+
     try {
-      const texts = state.defects.map((d) => d.detailKo).filter((t) => t.trim().length > 0);
-      const translations = texts.length > 0 ? await translateBatch(texts) : {};
-      const nextState = { ...state, generated: true, translations };
-      setState(nextState);
-
-      // Persist to server CSV log (timestamped row)
-      const entry = buildReportLogEntry(nextState);
-      if (entry) {
-        saveReportLog(entry).catch(() => {
-          /* silent — localStorage still holds the draft */
-        });
+      const result = await generateReportAi(state.defects, state.product, state.thirdLanguage);
+      // Merge with existing translations so prior third-language outputs stay
+      // cached when the user re-runs in a different language.
+      translations = { ...state.translations };
+      for (const [ko, entry] of Object.entries(result.translations)) {
+        translations[ko] = { ...(translations[ko] ?? { en: entry.en }), ...entry };
       }
-
-      setTimeout(() => {
-        document.getElementById('preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 50);
-    } finally {
-      setTranslating(false);
+      productionGuidance = state.productionGuidance
+        ? { ...state.productionGuidance, ...result.guidance }
+        : result.guidance;
+      aiSource = 'claude';
+    } catch (err) {
+      // Graceful fallback: use MyMemory translations so the report still
+      // generates even if the AI Gateway is unavailable. Guidance is left
+      // null and the catalog defaults render in its place.
+      const message =
+        err instanceof AiGenerationError
+          ? err.message
+          : err instanceof Error
+          ? err.message
+          : 'AI 생성 실패';
+      setAiError(`${message} — 기본 번역으로 대체합니다.`);
+      setGenerationStage('translate-fallback');
+      const texts = state.defects.map((d) => d.detailKo).filter((t) => t.trim().length > 0);
+      translations = texts.length > 0 ? await translateBatch(texts) : {};
+      aiSource = 'mymemory-fallback';
     }
+
+    const nextState: ReportState = {
+      ...state,
+      generated: true,
+      translations,
+      productionGuidance,
+      thirdLanguage: state.thirdLanguage,
+    };
+    setState(nextState);
+    setGenerationStage('idle');
+    setTranslating(false);
+
+    // Persist to server CSV log (timestamped row)
+    const entry = buildReportLogEntry(nextState);
+    if (entry) {
+      saveReportLog(entry).catch(() => {
+        /* silent — localStorage still holds the draft */
+      });
+    }
+
+    // Fire-and-forget: append a row to the configured Google Sheet for the
+    // searchable claim history / dashboard. Failure does not block the report.
+    setSheetSave(null);
+    saveReportToSheet(nextState, { aiSource }).then((result) => setSheetSave(result));
+
+    setTimeout(() => {
+      document.getElementById('preview')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   }
 
   function handleResetInputs() {
@@ -298,6 +357,62 @@ export default function App() {
             </div>
           )}
 
+          {/* AI error banner (shown only when AI failed and we fell back) */}
+          {aiError && (
+            <div
+              className="mb-4 px-4 py-3 rounded-lg border text-sm"
+              style={{
+                background: '#fff7ed',
+                borderColor: '#fdba74',
+                color: '#9a3412',
+              }}
+            >
+              <strong>AI 생성 실패:</strong> {aiError}
+            </div>
+          )}
+
+          {/* Google Sheet save indicator — small status pill */}
+          {sheetSave && (
+            <div
+              className="mb-4 px-4 py-2.5 rounded-lg border text-sm flex items-center justify-between gap-3"
+              style={
+                sheetSave.ok
+                  ? { background: '#ecfdf5', borderColor: '#6ee7b7', color: '#065f46' }
+                  : { background: '#fef2f2', borderColor: '#fca5a5', color: '#991b1b' }
+              }
+            >
+              <span>
+                {sheetSave.ok ? (
+                  <>
+                    <strong>Sheet에 저장됨</strong>
+                    {sheetSave.updatedRange && (
+                      <span className="ml-2 text-xs opacity-75 font-mono">
+                        ({sheetSave.updatedRange})
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <strong>Sheet 저장 실패:</strong> {sheetSave.error}
+                    <span className="ml-2 text-xs opacity-75">
+                      (리포트는 정상 생성됨, 저장만 실패)
+                    </span>
+                  </>
+                )}
+              </span>
+              {sheetSave.ok && sheetSave.sheetUrl && (
+                <a
+                  href={sheetSave.sheetUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-semibold underline whitespace-nowrap"
+                >
+                  📊 보관함 열기
+                </a>
+              )}
+            </div>
+          )}
+
           {/* Input card */}
           <div className="fnf-card">
             <DefectForm
@@ -305,6 +420,7 @@ export default function App() {
               onChange={setState}
               onGenerate={handleGenerate}
               translating={translating}
+              generationStage={generationStage}
             />
           </div>
         </div>

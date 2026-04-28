@@ -13,8 +13,18 @@ import {
   ImageRun,
 } from 'docx';
 import { saveAs } from 'file-saver';
-import type { ReportState } from '../types';
+import type { ReportState, ThirdLang } from '../types';
+import { THIRD_LANG_LABELS } from '../types';
 import { DEFECT_CATALOG } from '../data/defectCatalog';
+
+function catalogLabel(category: keyof typeof DEFECT_CATALOG, lang: ThirdLang): string {
+  const c = DEFECT_CATALOG[category];
+  return lang === 'vi' ? c.label.vi : c.label.en;
+}
+function catalogInsight(category: keyof typeof DEFECT_CATALOG, lang: ThirdLang): string {
+  const c = DEFECT_CATALOG[category];
+  return lang === 'vi' ? c.insight.vi : c.insight.en;
+}
 
 function dataUrlToUint8(dataUrl: string): Uint8Array {
   const b64 = dataUrl.split(',')[1] ?? '';
@@ -31,8 +41,17 @@ function plainCell(text: string, bold = false): TableCell {
 }
 
 export async function exportReportToDocx(state: ReportState): Promise<void> {
-  const { product, defects, defectPhotos, careLabelPhotos } = state;
+  const {
+    product,
+    defects,
+    defectPhotos,
+    careLabelPhotos,
+    translations,
+    productionGuidance,
+    thirdLanguage,
+  } = state;
   if (!product) return;
+  const thirdMeta = THIRD_LANG_LABELS[thirdLanguage];
 
   const totalDefectQty = defects.reduce((acc, d) => acc + d.qty, 0);
   const defectRate = ((totalDefectQty / product.receivedQty) * 100).toFixed(2);
@@ -85,19 +104,22 @@ export async function exportReportToDocx(state: ReportState): Promise<void> {
       plainCell('Qty', true),
       plainCell('한국어 (KO)', true),
       plainCell('English (EN)', true),
-      plainCell('Tiếng Việt (VI)', true),
+      plainCell(`${thirdMeta.native} (${thirdLanguage.toUpperCase()})`, true),
     ],
   });
 
   const defectRows = defects.map((d, i) => {
     const cat = DEFECT_CATALOG[d.category];
+    const tl = translations[d.detailKo.trim()];
+    const thirdText = tl?.[thirdLanguage] ?? d.detailKo;
+    const thirdLabel = catalogLabel(d.category, thirdLanguage);
     return new TableRow({
       children: [
         plainCell(String(i + 1)),
         plainCell(String(d.qty)),
         plainCell(`${cat.label.ko}\n${d.detailKo}`),
-        plainCell(`${cat.label.en}\n${d.detailKo}`),
-        plainCell(`${cat.label.vi}\n${d.detailKo}`),
+        plainCell(`${cat.label.en}\n${tl?.en ?? d.detailKo}`),
+        plainCell(`${thirdLabel}\n${thirdText}`),
       ],
     });
   });
@@ -109,26 +131,36 @@ export async function exportReportToDocx(state: ReportState): Promise<void> {
 
   const categories = Array.from(new Set(defects.map((d) => d.category)));
   const insightBlocks: Paragraph[] = [];
-  (['ko', 'en', 'vi'] as const).forEach((lang) => {
+  const langSlots: Array<'ko' | 'en' | ThirdLang> = ['ko', 'en', thirdLanguage];
+  langSlots.forEach((lang) => {
+    const langTitle =
+      lang === 'ko' ? '· 한국어' : lang === 'en' ? '· English' : `· ${thirdMeta.native}`;
     insightBlocks.push(
       new Paragraph({
         children: [
-          new TextRun({
-            text: lang === 'ko' ? '· 한국어' : lang === 'en' ? '· English' : '· Tiếng Việt',
-            bold: true,
-            size: 20,
-            color: 'C8102E',
-          }),
+          new TextRun({ text: langTitle, bold: true, size: 20, color: 'C8102E' }),
         ],
       })
     );
     categories.forEach((c) => {
+      const label =
+        lang === 'ko'
+          ? DEFECT_CATALOG[c].label.ko
+          : lang === 'en'
+          ? DEFECT_CATALOG[c].label.en
+          : catalogLabel(c, thirdLanguage);
+      const insight =
+        lang === 'ko'
+          ? DEFECT_CATALOG[c].insight.ko
+          : lang === 'en'
+          ? DEFECT_CATALOG[c].insight.en
+          : catalogInsight(c, thirdLanguage);
       insightBlocks.push(
         new Paragraph({
           bullet: { level: 0 },
           children: [
-            new TextRun({ text: `${DEFECT_CATALOG[c].label[lang]}: `, bold: true, size: 18 }),
-            new TextRun({ text: DEFECT_CATALOG[c].insight[lang], size: 18 }),
+            new TextRun({ text: `${label}: `, bold: true, size: 18 }),
+            new TextRun({ text: insight, size: 18 }),
           ],
         })
       );
@@ -178,6 +210,28 @@ export async function exportReportToDocx(state: ReportState): Promise<void> {
     }
   }
 
+  const guidanceBlocks: Paragraph[] = [];
+  if (productionGuidance) {
+    const guidanceSlots: Array<'ko' | 'en' | ThirdLang> = ['ko', 'en', thirdLanguage];
+    guidanceSlots.forEach((lang) => {
+      const langTitle =
+        lang === 'ko' ? '· 한국어' : lang === 'en' ? '· English' : `· ${thirdMeta.native}`;
+      guidanceBlocks.push(
+        new Paragraph({
+          children: [
+            new TextRun({ text: langTitle, bold: true, size: 20, color: 'C8102E' }),
+          ],
+        })
+      );
+      guidanceBlocks.push(
+        new Paragraph({
+          children: [new TextRun({ text: productionGuidance[lang] ?? '', size: 18 })],
+        })
+      );
+      guidanceBlocks.push(new Paragraph({ text: '' }));
+    });
+  }
+
   const doc = new Document({
     styles: {
       default: {
@@ -194,6 +248,14 @@ export async function exportReportToDocx(state: ReportState): Promise<void> {
           sectionTitle('Defect Findings · 불량 내역 · Chi tiết lỗi'),
           defectTable,
           new Paragraph({ text: '' }),
+          ...(productionGuidance
+            ? [
+                sectionTitle(
+                  'Production Cautions · 생산 주의사항 · Lưu ý sản xuất (AI · Claude)'
+                ),
+                ...guidanceBlocks,
+              ]
+            : []),
           sectionTitle('Corrective Action Insights · 조치 인사이트 · Đề xuất khắc phục'),
           ...insightBlocks,
           ...imageParagraphs,

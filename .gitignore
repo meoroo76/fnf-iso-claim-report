@@ -9,11 +9,20 @@ dist-ssr
 build
 .vite
 *.local
+tsconfig.tsbuildinfo
 
 # env / secrets
 .env
 .env.*
 !.env.example
+*.key
+*.pem
+api/clerk.txt
+api/*-key*.json
+api/*-secret*.txt
+
+# setup helpers (one-off)
+sheet_header.tsv
 
 # vercel
 .vercel

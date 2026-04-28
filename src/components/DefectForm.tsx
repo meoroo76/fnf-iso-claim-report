@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
-import type { DefectEntry, DefectPhoto, ReportState } from '../types';
+import type { DefectEntry, DefectPhoto, ReportState, ThirdLang } from '../types';
+import { THIRD_LANG_LABELS } from '../types';
 import { DEFECT_CATALOG, UI_STRINGS } from '../data/defectCatalog';
 import type { DefectCategory } from '../data/defectCatalog';
+
+const THIRD_LANG_OPTIONS: ThirdLang[] = ['vi', 'zh', 'id', 'my'];
 import {
   fetchStyle,
   fetchMeta,
@@ -11,16 +14,25 @@ import {
 } from '../lib/kgClient';
 import { readFileAsDataUrl, uid, todayISO, claimNoFor } from '../lib/fileUtils';
 
+type GenerationStage = 'idle' | 'ai' | 'translate-fallback';
+
 type Props = {
   state: ReportState;
   onChange: (next: ReportState) => void;
   onGenerate: () => void;
   translating?: boolean;
+  generationStage?: GenerationStage;
 };
 
 const CATEGORIES: DefectCategory[] = Object.keys(DEFECT_CATALOG) as DefectCategory[];
 
-export function DefectForm({ state, onChange, onGenerate, translating = false }: Props) {
+export function DefectForm({
+  state,
+  onChange,
+  onGenerate,
+  translating = false,
+  generationStage = 'idle',
+}: Props) {
   const [lookupError, setLookupError] = useState<string | null>(null);
   const [lookupBusy, setLookupBusy] = useState(false);
   const [meta, setMeta] = useState<KGMeta | null>(null);
@@ -191,6 +203,67 @@ export function DefectForm({ state, onChange, onGenerate, translating = false }:
           </Field>
         </div>
 
+        {/* 🌐 Tri-lingual language picker — KO + EN fixed, 3rd slot user-selectable */}
+        <div
+          className="rounded-lg border border-fnf-border px-3 py-2.5"
+          style={{
+            background: 'linear-gradient(135deg, #1a1a2e 0%, #0f3460 100%)',
+          }}
+        >
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-[0.22em] text-white/60 font-semibold">
+                🌐 리포트 언어
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white/15 text-white/95">
+                🇰🇷 KO
+              </span>
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-white/15 text-white/95">
+                🇬🇧 EN
+              </span>
+              <span className="text-white/50 text-xs mx-0.5">+</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-1">
+              <span className="text-[10px] uppercase tracking-[0.18em] text-white/70 font-semibold mr-1">
+                3번째
+              </span>
+              {THIRD_LANG_OPTIONS.map((lang) => {
+                const active = state.thirdLanguage === lang;
+                const meta = THIRD_LANG_LABELS[lang];
+                return (
+                  <button
+                    key={lang}
+                    type="button"
+                    onClick={() => onChange({ ...state, thirdLanguage: lang })}
+                    disabled={translating}
+                    aria-pressed={active}
+                    className="px-3 py-1.5 rounded-md text-[12px] font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    style={
+                      active
+                        ? {
+                            background: '#e94560',
+                            color: '#fff',
+                            boxShadow: '0 2px 8px rgba(233,69,96,0.45)',
+                          }
+                        : {
+                            background: 'rgba(255,255,255,0.08)',
+                            color: 'rgba(255,255,255,0.85)',
+                            border: '1px solid rgba(255,255,255,0.18)',
+                          }
+                    }
+                    title={meta.ko}
+                  >
+                    <span className="mr-1 font-mono text-[10px] opacity-75">
+                      {lang.toUpperCase()}
+                    </span>
+                    {meta.native}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
         <div className="tip-box">
           <div className="text-[12px] font-bold text-fnf-success mb-0.5 tracking-wider">TIP</div>
           <p className="text-[13px]">
@@ -307,7 +380,13 @@ export function DefectForm({ state, onChange, onGenerate, translating = false }:
           }}
           className="w-full py-3.5 rounded-lg font-semibold tracking-wide uppercase text-sm hover:brightness-110 transition disabled:bg-neutral-300 disabled:cursor-not-allowed shadow-accent-glow disabled:shadow-none"
         >
-          {translating ? '번역 중… (EN / VI 동시 처리)' : `${UI_STRINGS.generateReport} ➡`}
+          {translating
+            ? generationStage === 'ai'
+              ? '🤖 Claude AI 생성 중… (번역 + 생산 주의사항)'
+              : generationStage === 'translate-fallback'
+              ? '번역 폴백 처리 중…'
+              : '번역 중…'
+            : `🤖 ${UI_STRINGS.generateReport} (AI) ➡`}
         </button>
       </div>
     </div>

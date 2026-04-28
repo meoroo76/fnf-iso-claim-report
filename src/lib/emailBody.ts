@@ -2,6 +2,7 @@
 // Pure function — no network calls. Used on both client (preview) and server (send).
 
 import type { KGProduct } from './kgClient';
+import type { TranslationEntry } from '../types';
 import { DEFECT_CATALOG, type DefectCategory } from '../data/defectCatalog';
 
 export type EmailDraftInput = {
@@ -10,7 +11,7 @@ export type EmailDraftInput = {
   inspectionDate: string;
   inspector: string;
   defects: Array<{ category: DefectCategory; qty: number; detailKo: string }>;
-  translations: Record<string, { en: string; vi: string }>;
+  translations: Record<string, TranslationEntry>;
   totalDefectQty: number;
   claimRate: number;
 };
@@ -53,6 +54,9 @@ export function generateEmailDraft(input: EmailDraftInput): EmailDraft {
     .map((d, i) => {
       const cat = DEFECT_CATALOG[d.category];
       const tl = translations[d.detailKo.trim()];
+      // Email VI body uses VI translation when available, else falls back to KO source.
+      // For zh/id/my third-language reports, the VI body section can be ignored
+      // by the user (use combined or ko/en views instead).
       return `  ${i + 1}. [${cat.label.vi}] ${d.qty}pcs — ${tl?.vi ?? d.detailKo}`;
     })
     .join('\n');

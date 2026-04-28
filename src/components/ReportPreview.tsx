@@ -1,6 +1,22 @@
 import { forwardRef } from 'react';
-import type { ReportState } from '../types';
+import type { ReportState, ThirdLang } from '../types';
+import { THIRD_LANG_LABELS } from '../types';
 import { DEFECT_CATALOG } from '../data/defectCatalog';
+
+// Catalog only contains ko/en/vi labels & insights. When user selected a third
+// language other than vi (zh/id/my), show the EN value as a stable fallback —
+// catalog content is largely fixed F&F-internal phrasing that is acceptable in
+// English for non-VI third-language reports.
+function catalogLabel(category: keyof typeof DEFECT_CATALOG, lang: ThirdLang): string {
+  const c = DEFECT_CATALOG[category];
+  if (lang === 'vi') return c.label.vi;
+  return c.label.en;
+}
+function catalogInsight(category: keyof typeof DEFECT_CATALOG, lang: ThirdLang): string {
+  const c = DEFECT_CATALOG[category];
+  if (lang === 'vi') return c.insight.vi;
+  return c.insight.en;
+}
 
 type Props = { state: ReportState };
 
@@ -8,7 +24,8 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
   { state },
   ref
 ) {
-  const { product, defects, defectPhotos, careLabelPhotos, translations } = state;
+  const { product, defects, defectPhotos, careLabelPhotos, translations, productionGuidance, thirdLanguage } = state;
+  const thirdMeta = THIRD_LANG_LABELS[thirdLanguage];
   if (!product) {
     return (
       <div className="report-page mx-auto flex items-center justify-center text-brand-muted">
@@ -108,7 +125,9 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
       </section>
 
       <section className="mb-3">
-        <SectionTitle>Defect Findings · 불량 내역 · Chi tiết lỗi</SectionTitle>
+        <SectionTitle>
+          Defect Findings · 불량 내역 · {thirdMeta.native}
+        </SectionTitle>
         <table className="w-full border-collapse border border-neutral-400 text-[9.5px]">
           <thead className="bg-neutral-100">
             <tr>
@@ -116,13 +135,16 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
               <th className="border border-neutral-400 p-1 w-10">Qty</th>
               <th className="border border-neutral-400 p-1">한국어 (KO)</th>
               <th className="border border-neutral-400 p-1">English (EN)</th>
-              <th className="border border-neutral-400 p-1">Tiếng Việt (VI)</th>
+              <th className="border border-neutral-400 p-1">
+                {thirdMeta.native} ({thirdLanguage.toUpperCase()})
+              </th>
             </tr>
           </thead>
           <tbody>
             {defects.map((d, i) => {
               const cat = DEFECT_CATALOG[d.category];
               const tl = translations[d.detailKo.trim()];
+              const thirdText = tl?.[thirdLanguage];
               return (
                 <tr key={d.id} className="align-top">
                   <td className="border border-neutral-400 p-1 text-center font-mono">{i + 1}</td>
@@ -136,8 +158,8 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
                     <div className="text-neutral-700 mt-0.5">{tl?.en || '—'}</div>
                   </td>
                   <td className="border border-neutral-400 p-1">
-                    <div className="font-semibold">{cat.label.vi}</div>
-                    <div className="text-neutral-700 mt-0.5">{tl?.vi || '—'}</div>
+                    <div className="font-semibold">{catalogLabel(d.category, thirdLanguage)}</div>
+                    <div className="text-neutral-700 mt-0.5">{thirdText || '—'}</div>
                   </td>
                 </tr>
               );
@@ -146,24 +168,73 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
         </table>
       </section>
 
+      {productionGuidance && (
+        <section className="mb-3">
+          <SectionTitle>
+            Production Cautions · 생산 주의사항 · {thirdMeta.native}
+            <span className="ml-2 text-[8.5px] text-brand-muted normal-case tracking-normal font-normal">
+              (AI 생성 · Claude · 다음 라운드 협력사 · 외관검사 대행사 대상)
+            </span>
+          </SectionTitle>
+          <div className="grid grid-cols-3 gap-2">
+            {(['ko', 'en', thirdLanguage] as const).map((lang) => {
+              const langLabel =
+                lang === 'ko' ? '한국어' : lang === 'en' ? 'English' : thirdMeta.native;
+              const text = productionGuidance[lang];
+              return (
+                <div
+                  key={lang}
+                  className="border border-neutral-300 p-1.5"
+                  style={{ background: '#fffaf0' }}
+                >
+                  <div className="text-[8.5px] uppercase tracking-[0.2em] text-brand-muted mb-1">
+                    {langLabel}
+                  </div>
+                  <p className="text-[9px] leading-snug whitespace-pre-line">
+                    {text || '—'}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
       <section className="mb-3">
-        <SectionTitle>Inspection Guidance · 검사 포인트 · Hướng dẫn kiểm tra</SectionTitle>
+        <SectionTitle>Inspection Guidance · 검사 포인트 · {thirdMeta.native}</SectionTitle>
         <div className="grid grid-cols-3 gap-2">
-          {(['ko', 'en', 'vi'] as const).map((lang) => (
-            <div key={lang} className="border border-neutral-300 p-1.5 bg-neutral-50">
-              <div className="text-[8.5px] uppercase tracking-[0.2em] text-brand-muted mb-1">
-                {lang === 'ko' ? '한국어' : lang === 'en' ? 'English' : 'Tiếng Việt'}
+          {(['ko', 'en', thirdLanguage] as const).map((lang) => {
+            const langLabel =
+              lang === 'ko' ? '한국어' : lang === 'en' ? 'English' : thirdMeta.native;
+            return (
+              <div key={lang} className="border border-neutral-300 p-1.5 bg-neutral-50">
+                <div className="text-[8.5px] uppercase tracking-[0.2em] text-brand-muted mb-1">
+                  {langLabel}
+                </div>
+                <ul className="space-y-1 list-disc pl-3.5">
+                  {dedupedCategories(defects).map((cat) => {
+                    const label =
+                      lang === 'ko'
+                        ? DEFECT_CATALOG[cat].label.ko
+                        : lang === 'en'
+                        ? DEFECT_CATALOG[cat].label.en
+                        : catalogLabel(cat, thirdLanguage);
+                    const insight =
+                      lang === 'ko'
+                        ? DEFECT_CATALOG[cat].insight.ko
+                        : lang === 'en'
+                        ? DEFECT_CATALOG[cat].insight.en
+                        : catalogInsight(cat, thirdLanguage);
+                    return (
+                      <li key={cat} className="text-[9px] leading-snug">
+                        <span className="font-semibold">{label}:</span> {insight}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-              <ul className="space-y-1 list-disc pl-3.5">
-                {dedupedCategories(defects).map((cat) => (
-                  <li key={cat} className="text-[9px] leading-snug">
-                    <span className="font-semibold">{DEFECT_CATALOG[cat].label[lang]}:</span>{' '}
-                    {DEFECT_CATALOG[cat].insight[lang]}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 
