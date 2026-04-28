@@ -8,7 +8,10 @@
 // flow. If the sheet write fails, the report still generates locally and the
 // user can retry later.
 
-import { google } from 'googleapis';
+// googleapis is CJS-only — Node ESM does not synthesize named re-exports
+// from CJS modules, so we MUST default-import and destructure manually.
+import googleapis from 'googleapis';
+const { google } = googleapis;
 import { z } from 'zod';
 
 export const config = {

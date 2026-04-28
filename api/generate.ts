@@ -11,8 +11,11 @@
 
 import { generateObject } from 'ai';
 import { z } from 'zod';
-import glossary from '../data/garmentGlossary.json';
-import { DEFECT_CATALOG } from '../src/data/defectCatalog';
+// Use createRequire so JSON loading works on both CJS and ESM Node runtimes.
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+const glossary = require('../data/garmentGlossary.json');
+import { DEFECT_CATALOG } from '../src/data/defectCatalog.js';
 // PRIMARY (highest-priority) F&F-curated 5-language glossary.
 // Source of truth for ko ↔ en/vi/zh/id/my professional garment terminology.
 // @ts-ignore — JS file with default export
