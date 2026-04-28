@@ -87,7 +87,7 @@ export async function exportReportToDocx(state: ReportState): Promise<void> {
     width: { size: 100, type: WidthType.PERCENTAGE },
     rows: [
       tableRow('Brand', product.brand),
-      tableRow('Style (품번)', product.styleCode),
+      tableRow('Style (품번)', product.partCode),
       tableRow('Supplier (협력사)', `${product.supplier} · ${product.supplierVendorCode}`),
       tableRow('Color (칼라)', `${product.color} (${product.colorCode})`),
       tableRow('Category / Season', `${product.category} · ${product.season}`),
@@ -265,7 +265,7 @@ export async function exportReportToDocx(state: ReportState): Promise<void> {
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, `ISO_Claim_Report_${state.claimNo || product.styleCode}.docx`);
+  saveAs(blob, `ISO_Claim_Report_${state.claimNo || product.partCode}.docx`);
 }
 
 function tableRow(label: string, value: string): TableRow {

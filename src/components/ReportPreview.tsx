@@ -84,7 +84,7 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
             <div className="relative">
               <img
                 src={imgSrc}
-                alt={product.styleCode}
+                alt={product.partCode}
                 className="w-[110px] h-[140px] object-cover border border-neutral-300"
                 crossOrigin="anonymous"
               />
@@ -106,7 +106,7 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
           <table className="w-full text-[10px] border-collapse">
             <tbody>
               <Row label="Brand" value={product.brand} />
-              <Row label="Style (품번)" value={product.styleCode} mono />
+              <Row label="Style (품번)" value={product.partCode} mono />
               <Row
                 label="Supplier (협력사)"
                 value={`${product.supplier} · ${product.supplierVendorCode}`}
@@ -257,14 +257,17 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
               <div
                 className={`grid gap-1.5 ${
                   defectPhotos.length === 1
-                    ? 'grid-cols-1'
-                    : defectPhotos.length === 2
-                    ? 'grid-cols-2'
+                    ? 'grid-cols-1 justify-items-center'
                     : 'grid-cols-2'
                 }`}
               >
                 {defectPhotos.slice(0, hasBothPhotoTypes ? 4 : 6).map((p, i) => (
-                  <figure key={p.id} className="relative">
+                  <figure
+                    key={p.id}
+                    className={`relative ${
+                      defectPhotos.length === 1 ? 'w-full max-w-[420px]' : ''
+                    }`}
+                  >
                     <img
                       src={p.dataUrl}
                       alt={p.name}
@@ -293,14 +296,17 @@ export const ReportPreview = forwardRef<HTMLDivElement, Props>(function ReportPr
               <div
                 className={`grid gap-1.5 ${
                   careLabelPhotos.length === 1
-                    ? 'grid-cols-1'
-                    : careLabelPhotos.length === 2
-                    ? 'grid-cols-2'
+                    ? 'grid-cols-1 justify-items-center'
                     : 'grid-cols-2'
                 }`}
               >
                 {careLabelPhotos.slice(0, hasBothPhotoTypes ? 4 : 6).map((p, i) => (
-                  <figure key={p.id} className="relative">
+                  <figure
+                    key={p.id}
+                    className={`relative ${
+                      careLabelPhotos.length === 1 ? 'w-full max-w-[420px]' : ''
+                    }`}
+                  >
                     <img
                       src={p.dataUrl}
                       alt={p.name}

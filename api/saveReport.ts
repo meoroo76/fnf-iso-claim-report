@@ -126,6 +126,10 @@ function getServiceAccountCredentials() {
     if (!parsed.client_email || !parsed.private_key) {
       throw new Error('Invalid service account JSON — missing client_email or private_key');
     }
+    // Vercel env UI sometimes double-escapes \n in multi-line strings; normalize.
+    if (typeof parsed.private_key === 'string' && parsed.private_key.includes('\\n')) {
+      parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+    }
     return parsed;
   } catch (err) {
     throw new Error(
@@ -184,7 +188,17 @@ export default async function handler(req: Request): Promise<Response> {
     const tab = process.env.GOOGLE_SHEET_TAB || 'Reports';
     const range = `${tab}!A:AB`;
 
-    const result = await sheets.spreadsheets.values.append({
+    // Defensive timeout — never let JWT auth or Sheets API hang past 20s.
+    // Vercel maxDuration is 30s; we want to surface a meaningful error before that.
+    const TIMEOUT_MS = 20_000;
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(
+        () => reject(new Error(`Sheets API timeout after ${TIMEOUT_MS}ms`)),
+        TIMEOUT_MS
+      )
+    );
+
+    const appendCall = sheets.spreadsheets.values.append({
       spreadsheetId: sheetId,
       range,
       valueInputOption: 'USER_ENTERED',
@@ -194,6 +208,7 @@ export default async function handler(req: Request): Promise<Response> {
       },
     });
 
+    const result = await Promise.race([appendCall, timeoutPromise]);
     const updatedRange = result.data.updates?.updatedRange ?? null;
 
     return Response.json(

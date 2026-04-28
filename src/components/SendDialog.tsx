@@ -171,13 +171,13 @@ export function SendDialog({ open, onClose, state, buildPdfBlob }: Props) {
         (totalDefectQty / state.product.receivedQty) * 100;
       const r = await postToTeams({
         subject: draft.subject,
-        summary: `Claim ${state.claimNo} · ${state.product.brand} ${state.product.styleCode} · ${totalDefectQty}pcs (${claimRate.toFixed(2)}%)`,
+        summary: `Claim ${state.claimNo} · ${state.product.brand} ${state.product.partCode} · ${totalDefectQty}pcs (${claimRate.toFixed(2)}%)`,
         claimNo: state.claimNo,
         brand: state.product.brand,
-        styleCode: state.product.styleCode,
+        styleCode: state.product.partCode,
         season: state.product.season,
         claimRate,
-        attachmentName: `ISO_Claim_Report_${state.claimNo || state.product.styleCode}.pdf`,
+        attachmentName: `ISO_Claim_Report_${state.claimNo || state.product.partCode}.pdf`,
       });
       setResult({
         ok: r.ok,
@@ -329,7 +329,7 @@ export function SendDialog({ open, onClose, state, buildPdfBlob }: Props) {
             </div>
             <div className="font-mono text-[11px] space-y-0.5 text-fnf-muted max-h-32 overflow-y-auto">
               <div>
-                📄 <strong className="text-fnf-primary">ISO_Claim_Report_{state.claimNo || state.product.styleCode}.pdf</strong>
+                📄 <strong className="text-fnf-primary">ISO_Claim_Report_{state.claimNo || state.product.partCode}.pdf</strong>
                 <span className="ml-2 text-[10px]">(3× 해상도로 렌더)</span>
               </div>
               {photoAttachmentPreview.map((p) => (

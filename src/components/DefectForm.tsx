@@ -52,7 +52,8 @@ export function DefectForm({
         product,
         styleInput: product.styleCode,
         claimNo:
-          state.claimNo || claimNoFor(product.styleCode, state.inspectionDate || todayISO()),
+          state.claimNo ||
+          claimNoFor(product.partCode, state.inspectionDate || todayISO()),
       });
     } catch (err) {
       if (err instanceof KGNotFound) {
@@ -447,7 +448,7 @@ function ProductCard({
       <div className="relative">
         <img
           src={img}
-          alt={product.styleCode}
+          alt={product.partCode}
           className="w-32 h-44 object-cover bg-neutral-100"
           crossOrigin="anonymous"
         />
@@ -462,7 +463,7 @@ function ProductCard({
       </div>
       <div className="p-3 flex-1 grid grid-cols-2 gap-x-4 gap-y-2 text-[13px]">
         <InfoCell label="Brand" value={product.brand} />
-        <InfoCell label="Style" value={product.styleCode} mono />
+        <InfoCell label="Style" value={product.partCode} mono />
         <InfoCell label="Product" value={product.productName} />
         <InfoCell label="Category" value={`${product.category} · ${product.sex}`} />
         <InfoCell

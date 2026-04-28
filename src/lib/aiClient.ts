@@ -69,7 +69,10 @@ export async function generateReportAi(
       const err = (await res.json()) as ServerError;
       serverMsg = err.detail ? `${err.error}: ${err.detail}` : err.error;
     } catch {
-      /* response not JSON */
+      // Server returned non-JSON (e.g. Vercel platform error page like
+      // FUNCTION_INVOCATION_FAILED). Surface the bare HTTP code; details
+      // would need to come from server logs.
+      console.warn('[aiClient] non-JSON error body for status', res.status);
     }
     throw new AiGenerationError(serverMsg, res.status);
   }

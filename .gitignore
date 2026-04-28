@@ -24,6 +24,11 @@ api/*-secret*.txt
 # setup helpers (one-off)
 sheet_header.tsv
 
+# F&F internal docs (DB schemas etc.)
+src/input/SNOWFLAKE*.xlsx
+src/input/*FNF*.xlsx
+src/input/*F&F*.xlsx
+
 # vercel
 .vercel
 

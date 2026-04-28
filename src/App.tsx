@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { DefectForm } from './components/DefectForm';
 import { ReportPreview } from './components/ReportPreview';
 import { UI_STRINGS } from './data/defectCatalog';
-import type { ReportState } from './types';
+import type { ReportState, TranslationEntry } from './types';
 import { todayISO } from './lib/fileUtils';
 import { exportElementToPdf, renderElementToPdfBlob } from './lib/exportPdf';
 import { exportReportToDocx } from './lib/exportDocx';
@@ -144,7 +144,22 @@ export default function App() {
       setAiError(`${message} — 기본 번역으로 대체합니다.`);
       setGenerationStage('translate-fallback');
       const texts = state.defects.map((d) => d.detailKo).filter((t) => t.trim().length > 0);
-      translations = texts.length > 0 ? await translateBatch(texts) : {};
+      const fallbackMap = texts.length > 0 ? await translateBatch(texts) : {};
+      // translateBatch only fills `en` and `vi`. For third languages other than
+      // VI (zh/id/my), copy the EN value into the third-language slot so users
+      // see something instead of a blank cell. Mark with [auto-en] for clarity.
+      translations = {};
+      for (const [ko, entry] of Object.entries(fallbackMap)) {
+        const next: TranslationEntry = { en: entry.en };
+        if (state.thirdLanguage === 'vi') {
+          next.vi = entry.vi;
+        } else {
+          next[state.thirdLanguage] = entry.en
+            ? `[auto-en] ${entry.en}`
+            : '';
+        }
+        translations[ko] = next;
+      }
       aiSource = 'mymemory-fallback';
     }
 
@@ -193,7 +208,7 @@ export default function App() {
     try {
       await exportElementToPdf(
         reportRef.current,
-        `ISO_Claim_Report_${state.claimNo || state.product.styleCode}.pdf`
+        `ISO_Claim_Report_${state.claimNo || state.product.partCode}.pdf`
       );
     } finally {
       if (wrapper) wrapper.style.transform = prevTransform;
@@ -209,7 +224,7 @@ export default function App() {
     try {
       return await renderElementToPdfBlob(
         reportRef.current,
-        `ISO_Claim_Report_${state.claimNo || state.product.styleCode}.pdf`
+        `ISO_Claim_Report_${state.claimNo || state.product.partCode}.pdf`
       );
     } finally {
       if (wrapper) wrapper.style.transform = prev;
@@ -310,7 +325,7 @@ export default function App() {
                 {state.product ? '1' : '0'}
               </div>
               <div className="stat-label">Style Matched</div>
-              <div className="stat-sub">{state.product?.styleCode || '— 미조회'}</div>
+              <div className="stat-sub">{state.product?.partCode || '— 미조회'}</div>
             </div>
             <div className="stat-card">
               <div className="stat-value accent">{state.defects.length}</div>

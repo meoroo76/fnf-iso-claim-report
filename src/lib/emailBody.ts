@@ -61,7 +61,7 @@ export function generateEmailDraft(input: EmailDraftInput): EmailDraft {
     })
     .join('\n');
 
-  const subject = `[ISO Claim · ${sev.en}] ${claimNo} · ${product.brand} ${product.styleCode} (${product.season}) · ${claimRate.toFixed(2)}%`;
+  const subject = `[ISO Claim · ${sev.en}] ${claimNo} · ${product.brand} ${product.partCode} (${product.season}) · ${claimRate.toFixed(2)}%`;
 
   const bodyKo = `안녕하세요, ${product.supplier} 담당자님.
 
@@ -73,7 +73,7 @@ F&F Corporation QA에서 아래 건에 대한 소비자/매장 클레임이 접�
   · 접수일     : ${inspectionDate}
   · 검사자     : ${inspector || '미지정'}
   · 브랜드     : ${product.brand}
-  · 스타일/품번 : ${product.styleCode} (${product.productName})
+  · 스타일/품번 : ${product.partCode} (${product.productName})
   · 운영시즌   : ${product.season}
   · 컬러       : ${product.color} (${product.colorCode})
   · 협력사     : ${product.supplier} (${product.supplierVendorCode})
@@ -98,7 +98,7 @@ F&F Corporation QA is forwarding the attached ISO Claim Report regarding consume
   · Inspection Dt : ${inspectionDate}
   · Inspector     : ${inspector || 'TBD'}
   · Brand         : ${product.brand}
-  · Style         : ${product.styleCode} (${product.productName})
+  · Style         : ${product.partCode} (${product.productName})
   · Season        : ${product.season}
   · Color         : ${product.color} (${product.colorCode})
   · Supplier      : ${product.supplier} (${product.supplierVendorCode})
@@ -123,7 +123,7 @@ Bộ phận QA của F&F Corporation xin gửi Báo cáo Khiếu nại ISO đín
   · Ngày kiểm   : ${inspectionDate}
   · Người kiểm  : ${inspector || 'Chưa định'}
   · Thương hiệu : ${product.brand}
-  · Kiểu (Style): ${product.styleCode} (${product.productName})
+  · Kiểu (Style): ${product.partCode} (${product.productName})
   · Mùa vụ      : ${product.season}
   · Màu         : ${product.color} (${product.colorCode})
   · Nhà cung cấp: ${product.supplier} (${product.supplierVendorCode})
