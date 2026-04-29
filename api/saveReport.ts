@@ -7,11 +7,15 @@
 // Designed to be FIRE-AND-FORGET from the client — never blocks the report
 // flow. If the sheet write fails, the report still generates locally and the
 // user can retry later.
+//
+// Implementation note (2026-04-29): replaced the heavy `googleapis` SDK
+// (~2.4MB, slow cold start, opaque hangs in Vercel Fluid Compute) with the
+// lightweight `google-auth-library` JWT client + a direct `fetch` call against
+// the Sheets v4 REST endpoint. Step-by-step `console.log` lines are intentional
+// — they surface in Vercel Runtime Logs so any future hang has a precise
+// last-known line.
 
-// googleapis is CJS-only — Node ESM does not synthesize named re-exports
-// from CJS modules, so we MUST default-import and destructure manually.
-import googleapis from 'googleapis';
-const { google } = googleapis;
+import { JWT } from 'google-auth-library';
 import { z } from 'zod';
 
 export const config = {
@@ -119,7 +123,12 @@ function buildRow(p: RequestPayload): (string | number)[] {
   ];
 }
 
-function getServiceAccountCredentials() {
+interface ServiceAccountCreds {
+  client_email: string;
+  private_key: string;
+}
+
+function getServiceAccountCredentials(): ServiceAccountCreds {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!raw) {
     throw new Error('GOOGLE_SERVICE_ACCOUNT_JSON env var is not set');
@@ -143,7 +152,73 @@ function getServiceAccountCredentials() {
   }
 }
 
+// Wrap any promise with a hard timeout. Surfaces a meaningful error instead of
+// letting Vercel's 30s function timeout swallow the cause.
+function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    p,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timeout after ${ms}ms`)), ms)
+    ),
+  ]);
+}
+
+async function getAccessToken(creds: ServiceAccountCreds): Promise<string> {
+  console.log('[saveReport] step=jwt_create');
+  const client = new JWT({
+    email: creds.client_email,
+    key: creds.private_key,
+    scopes: ['https://www.googleapis.com/auth/spreadsheets'],
+  });
+  console.log('[saveReport] step=jwt_authorize');
+  const tokenRes = await withTimeout(client.authorize(), 8_000, 'jwt_authorize');
+  if (!tokenRes.access_token) {
+    throw new Error('JWT authorize returned no access_token');
+  }
+  console.log('[saveReport] step=jwt_authorize_ok');
+  return tokenRes.access_token;
+}
+
+async function appendRow(
+  accessToken: string,
+  sheetId: string,
+  tab: string,
+  row: (string | number)[]
+): Promise<{ updatedRange: string | null }> {
+  const range = `${tab}!A:AB`;
+  const url =
+    `https://sheets.googleapis.com/v4/spreadsheets/${encodeURIComponent(sheetId)}` +
+    `/values/${encodeURIComponent(range)}:append` +
+    `?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`;
+
+  console.log('[saveReport] step=sheets_append_request', { tab });
+  const resp = await withTimeout(
+    fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ values: [row] }),
+    }),
+    10_000,
+    'sheets_append_fetch'
+  );
+
+  console.log('[saveReport] step=sheets_append_response', { status: resp.status });
+  if (!resp.ok) {
+    const text = await resp.text().catch(() => '');
+    throw new Error(`Sheets API ${resp.status}: ${text.slice(0, 500)}`);
+  }
+  const data = (await resp.json()) as {
+    updates?: { updatedRange?: string };
+  };
+  return { updatedRange: data.updates?.updatedRange ?? null };
+}
+
 export default async function handler(req: Request): Promise<Response> {
+  console.log('[saveReport] step=handler_start', { method: req.method });
+
   if (req.method !== 'POST') {
     return Response.json({ error: 'Method not allowed' }, { status: 405 });
   }
@@ -170,9 +245,10 @@ export default async function handler(req: Request): Promise<Response> {
     );
   }
 
-  let credentials;
+  let credentials: ServiceAccountCreds;
   try {
     credentials = getServiceAccountCredentials();
+    console.log('[saveReport] step=creds_loaded', { client_email: credentials.client_email });
   } catch (err) {
     return Response.json(
       { error: err instanceof Error ? err.message : 'Service account error' },
@@ -181,39 +257,11 @@ export default async function handler(req: Request): Promise<Response> {
   }
 
   try {
-    const auth = new google.auth.GoogleAuth({
-      credentials,
-      scopes: ['https://www.googleapis.com/auth/spreadsheets'],
-    });
-    const sheets = google.sheets({ version: 'v4', auth });
-
-    // Default tab name is "Reports". Override via GOOGLE_SHEET_TAB env var.
+    const accessToken = await getAccessToken(credentials);
     const tab = process.env.GOOGLE_SHEET_TAB || 'Reports';
-    const range = `${tab}!A:AB`;
+    const { updatedRange } = await appendRow(accessToken, sheetId, tab, buildRow(payload));
 
-    // Defensive timeout — never let JWT auth or Sheets API hang past 20s.
-    // Vercel maxDuration is 30s; we want to surface a meaningful error before that.
-    const TIMEOUT_MS = 20_000;
-    const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(
-        () => reject(new Error(`Sheets API timeout after ${TIMEOUT_MS}ms`)),
-        TIMEOUT_MS
-      )
-    );
-
-    const appendCall = sheets.spreadsheets.values.append({
-      spreadsheetId: sheetId,
-      range,
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
-      requestBody: {
-        values: [buildRow(payload)],
-      },
-    });
-
-    const result = await Promise.race([appendCall, timeoutPromise]);
-    const updatedRange = result.data.updates?.updatedRange ?? null;
-
+    console.log('[saveReport] step=done', { updatedRange });
     return Response.json(
       {
         ok: true,
@@ -227,6 +275,7 @@ export default async function handler(req: Request): Promise<Response> {
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Unknown sheets error';
+    console.error('[saveReport] step=error', msg);
     return Response.json({ error: 'Sheet append failed', detail: msg }, { status: 502 });
   }
 }

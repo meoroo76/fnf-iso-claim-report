@@ -13,7 +13,7 @@
     "ai": "^6.0.168",
     "docx": "^9.0.3",
     "file-saver": "^2.0.5",
-    "googleapis": "^171.4.0",
+    "google-auth-library": "^9.15.1",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
     "nodemailer": "^8.0.5",
